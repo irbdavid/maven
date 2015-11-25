@@ -13,10 +13,10 @@ The set of instruments and data products supported for reading and plotting is e
 Requirements
 ------------
 
-1. Tested against the anaconda python distrubition (v 3.5)
-2. SpiceyPy library required for NAIF spice interface
-3. SpacePy library required for CDF access
-4. celsius library
+1. Tested against the anaconda python distrubition (v 3.5 `https://www.continuum.io/downloads`)
+2. SpiceyPy library required for NAIF spice interface `https://github.com/AndrewAnnex/SpiceyPy`
+3. SpacePy library required for CDF access `http://spacepy.lanl.gov/`
+4. celsius library `https://github.com/irbdavid/celsius`
 
 Installation
 ------------
@@ -26,8 +26,9 @@ Installation
 3. If you have team-level SDC access, a shell variable needs to be set
 containing your username and password:
     `export MAVENPFP_USER_PASS=username:password`
-4. Set the local directory that will be used as a local mirror of the SDC:
+4. At a minimum, set the local directory that will be used for data storage:
     `export SC_DATA_DIR="~/data"`
+4. To provide comapatability with a parallel use of the Berkeley IDL code base, `MAVEN_DATA_DIR` and `MAVEN_KERNEL_DIR` can be used to specify the locations of existing local data.
 5. Run tests?
 
 

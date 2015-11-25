@@ -233,7 +233,7 @@ maven_http_manager = HTTP_Manager(
         'http://sprg.ssl.berkeley.edu/data/maven/data/sci/',
         os.getenv('MAVENPFP_USER_PASS').split(':')[0],
         os.getenv('MAVENPFP_USER_PASS').split(':')[1],
-        os.getenv('SC_DATA_DIR') + 'maven/spg/data/maven/data/sci/',
+        os.getenv('MAVEN_DATA_DIR', os.getenv('SC_DATA_DIR')+'maven/'),
         verbose=True)
 
 if __name__ == '__main__':

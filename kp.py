@@ -1,3 +1,5 @@
+"""MAVEN KP routines."""
+
 import numpy as np
 import pylab as plt
 import os
@@ -8,7 +10,6 @@ from matplotlib.colors import LogNorm
 
 from .kp_shortname_lookup import kp_shortname_lookup
 from . import sdc_interface
-
 
 from spacepy import pycdf
 

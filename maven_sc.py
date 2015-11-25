@@ -17,21 +17,20 @@ LAUNCH_DATE = celsius.spiceet('2013-11-17T18:28')
 
 
 REQUIRED_KERNELS = [
-        '../spg/data/misc/spice/naif/MAVEN/kernels/fk/maven_*.tf',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/lsk/naif*.tls',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/pck/pck*.tpc',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/sclk/MVN_SCLKSCET.*.tsc',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/spk/de421.bsp',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/spk/de430s.bsp',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/spk/mar097s.bsp',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/spk/maven_orb.bsp',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/spk/maven_orb_rec_*.bsp',
-        '../spg/data/misc/spice/naif/MAVEN/kernels/spk/maven_orb_rec.bsp',
+        'fk/maven_*.tf',
+        'lsk/naif*.tls',
+        'pck/pck*.tpc',
+        'sclk/MVN_SCLKSCET.*.tsc',
+        'spk/de421.bsp',
+        'spk/de430s.bsp',
+        'spk/mar097s.bsp',
+        'spk/maven_orb.bsp',
+        'spk/maven_orb_rec_*.bsp',
+        'spk/maven_orb_rec.bsp',
         # 'RSSD0002.TF',
                 ]
 
 DIRECTORY = None
-MAVEN_DATA_DIRECTORIES = ['/Volumes/ETC/data/maven/spice/']
 
 def load_kernels(force=False, directory=DIRECTORY):
     global KERNELS_LOADED
@@ -40,8 +39,7 @@ def load_kernels(force=False, directory=DIRECTORY):
         if KERNELS_LOADED: return
 
     if not directory:
-        # directory = os.getenv("SC_DATA_DIR") + 'maven/spg/data/misc/spice/naif/MAVEN/kernels/'
-        directory = os.getenv("SC_DATA_DIR") + 'maven/kernels/'
+        directory = os.getenv("MAVEN_KERNEL_DIR")
 
     try:
         for k in REQUIRED_KERNELS:
@@ -276,7 +274,6 @@ def read_maven_orbits(fname):
 
     print(' read %d orbits (MAX = %d)' % (len(orbit_list), number))
     return orbit_list
-
 
 if __name__ == '__main__':
     import pylab as plt

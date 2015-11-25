@@ -12,7 +12,7 @@ __license__ = "MIT"
 __version__ = "1.0"
 __email__ = "david.andrews@irfu.se"
 
-DIRECTORY = os.getenv("SC_DATA_DIR", os.path.expanduser("~/data/")) + "maven/spg/data/misc/spice/naif/MAVEN/kernels/spk/"
+DIRECTORY = os.getenv("MAVEN_KERNEL_DIR", os.path.expanduser("~/data/maven/spice/")) + "spk/"
 
 # Update kernels if > 1wk old
 
