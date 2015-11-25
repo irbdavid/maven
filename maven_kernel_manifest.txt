@@ -1,0 +1,26 @@
+{
+"name":"MAVEN SPICE kernel manifest",
+"version":"0.1",
+"author":"david.andrews@irfu.se",
+"date":"8 SEPTEMBER 2014",
+"local_directory":"$SC_DATA_DIR/maven/spg/data/misc/spice/naif/MAVEN/kernels/",
+"server_name":"naif.jpl.nasa.gov",
+"server_path":"/pub/naif/MAVEN/kernels",
+"kernels":[
+        "/fk/maven_v$VERSION.tf",
+        "/lsk/naif$VERSION.tls",
+        "/pck/pck$VERSION.tpc",
+        "/sclk/MVN_SCLKSCET.$VERSION.tsc",
+        "/spk/de$VERSION.bsp",
+        "/spk/de$VERSIONs.bsp",
+        "/spk/mar$VERSIONs.bsp",
+        "/spk/maven_struct_v$VERSION.bsp",
+        "/spk/mar$VERSION.bsp",
+	    "/spk/maven_orb.bsp$FORCE",
+        "/ck/mvn_sc_rec_*_v$VERSION.bc",
+	    "/spk/maven_orb_rec_*_v$VERSION.bsp",
+	    "/spk/maven_orb_rec_*_v$VERSION.orb",
+	    "/spk/maven_orb_rec.orb$FORCE",
+	    "/spk/maven_orb_rec.bsp$FORCE"
+        ]
+}
