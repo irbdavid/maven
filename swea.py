@@ -52,7 +52,8 @@ def load_swea_l2_summary(start, finish, kind='svyspec', http_manager=None,
         if not os.path.exists(f):
             raise IOError("%s does not exist" % f)
 
-    print('Located %d files' % len(files))
+    if not files:
+        return dict()
 
     if kind == 'svyspec':
         output = {'time':None, 'def':None}
@@ -89,35 +90,43 @@ def load_swea_l2_summary(start, finish, kind='svyspec', http_manager=None,
 def plot_swea_l2_summary(swea_data, max_times=4096, cmap=None, norm=None,
         labels=True, ax=None, colorbar=True):
 
-    if not 'def' in swea_data:
-        print('No data given?')
-        return
-
-    d = swea_data['def']
-    t = swea_data['time']
-
-    if d.shape[1] > max_times:
-        n = int(np.floor(d.shape[1] / max_times))
-        d = d[:,::n]
-        t = t[::n]
-
-    extent = (t[0], t[-1], swea_data['energy'][0], swea_data['energy'][-1])
-
-    if cmap is None: cmap = 'Spectral_r'
-    if norm is None: norm = LogNorm(1e6, 1e9)
+    energy_range = (2, 4000.)
+    def_range    = (1e6, 1e9)
 
     if ax is None:
         ax = plt.gca()
     else:
         plt.sca(ax)
 
+    if cmap is None: cmap = 'Spectral_r'
+    if norm is None: norm = LogNorm(def_range[0], def_range[1])
+
+    if not 'def' in swea_data:
+        print('Data is empty?')
+        # extent = (t[0], t[-1], swea_data['energy'][0], swea_data['energy'][-1])
+        d = np.empty(4).reshape((2,2)) + np.nan
+        t = plt.xlim()
+    else:
+        d = swea_data['def']
+        t = swea_data['time']
+
+        if d.shape[1] > max_times:
+            n = int(np.floor(d.shape[1] / max_times))
+            d = d[:,::n]
+            t = t[::n]
+
+        energy_range = (swea_data['energy'][0], swea_data['energy'][-1])
+
+    extent = (t[0], t[-1], energy_range[0], energy_range[1])
+
     img = plt.imshow(
         d, extent=extent, interpolation='nearest', origin='lower',
         norm=norm, cmap=cmap
     )
-    plt.yscale('log')
     plt.xlim(t[0], t[-1])
-    plt.ylim(swea_data['energy'][0], swea_data['energy'][-1])
+
+    plt.yscale('log')
+    plt.ylim(energy_range[0], energy_range[1])
 
     if labels:
         plt.ylabel("E / eV")

@@ -49,3 +49,25 @@ from . import swea
 from . import swia
 from . import ngims
 from . import kp
+
+
+from . import sdc_interface
+
+if os.getenv('MAVENPFP_USER_PASS') is None: # Public access
+    print('Setting up SDC access (public)')
+    sdc_interface.maven_http_manager = sdc_interface.HTTP_Manager(
+            'http://lasp.colorado.edu/maven/sdc/public/data/sci/',
+            '',
+            '',
+            os.getenv('MAVEN_DATA_DIR', os.getenv('SC_DATA_DIR')+'maven/'),
+            verbose=False)
+else:
+    print('Setting up Berkeley access (private)')
+    sdc_interface.maven_http_manager = sdc_interface.HTTP_Manager(
+            'http://sprg.ssl.berkeley.edu/data/maven/data/sci/',
+            os.getenv('MAVENPFP_USER_PASS').split(':')[0],
+            os.getenv('MAVENPFP_USER_PASS').split(':')[1],
+            os.getenv('MAVEN_DATA_DIR', os.getenv('SC_DATA_DIR')+'maven/'),
+            verbose=False)
+
+print('MAVEN setup complete\n----')

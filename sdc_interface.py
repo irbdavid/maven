@@ -1,3 +1,9 @@
+"""Interface for the MAVEN SDC at LASP
+
+
+"""
+
+
 import celsius
 import numpy as np
 
@@ -47,7 +53,7 @@ class IndexParser(HTMLParser):
 class HTTP_Manager(object):
     """Used to transfer files via HTTP, following Berkeley's system"""
 
-    def __init__(self, remote_path, username, password, local_path, update_interval=1, verbose=False):
+    def __init__(self, remote_path, username, password, local_path, update_interval=86400., verbose=False, silent=False):
         """Setup"""
         self.remote_path = remote_path
         self.username = username
@@ -57,6 +63,7 @@ class HTTP_Manager(object):
         self.verbose = verbose
         self.version = True
         self.download = True
+        self.silent = silent
 
         self.passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         self.passman.add_password(None, remote_path, username, password)
@@ -84,8 +91,9 @@ class HTTP_Manager(object):
 
         return local
 
-    def query(self,  query, version_function=None, date_function=None,
-                start=None, finish=None, cleanup=False, verbose=None):
+    def query(self, query, version_function=None, date_function=None,
+                start=None, finish=None, cleanup=False, verbose=None,
+                silent=None):
         """Takes a query, returns a list of local files that match.  If set, will first query the remote
         server, download missing files, and then delete local files that match the query but are no longer
         present on the remote.
@@ -108,6 +116,7 @@ class HTTP_Manager(object):
         query_filename  = split_query[-1]
 
         if verbose is None: verbose = self.verbose
+        if silent is None: silent = self.silent
 
         if version_function is None:
             version_function = lambda x: 0, ''.join(x)
@@ -123,11 +132,18 @@ class HTTP_Manager(object):
         if check_time and (date_function is None):
             raise ValueError("Start and finish are set, but date_function is not")
 
+        start_day = celsius.spiceet(celsius.utcstr(start, 'ISOC')[:10])
+        finish_day = celsius.spiceet(celsius.utcstr(finish, 'ISOC')[:10]) \
+                                + 86398. #1 day - 1s - 1 (possible) leap second
+
         # if verbose:
         #   print 'Remote path: ', self.remote_path + query_base_path
 
         ok_files = {}  # key will be the unique id of the file, value will be (version, the full name, local == True)
         files_to_delete = []
+
+        n_downloaded = 0
+        n_deleted    = 0
 
         # Find local matches
         for f in os.listdir(self.local_path + query_base_path):
@@ -137,7 +153,8 @@ class HTTP_Manager(object):
 
                 if check_time:
                     file_time = date_function(tmp.groups())
-                    if (file_time < start) or (file_time > finish): continue
+                    if (file_time < start_day) or (file_time > finish_day):
+                        continue
 
                 if unique_id in ok_files:
                     if ok_files[unique_id][0] < version_number:
@@ -158,8 +175,10 @@ class HTTP_Manager(object):
 
             update_index = True
             if os.path.exists(index_path):
-                age = os.path.getmtime(index_path) - py_time.time()
-                if age < self.update_interval: update_index = False
+                age = py_time.time() - os.path.getmtime(index_path)
+                print(index_path, age)
+                if age < self.update_interval:
+                    update_index = False
 
             if update_index:
                 try:
@@ -188,7 +207,8 @@ class HTTP_Manager(object):
 
                     if check_time:
                         file_time = date_function(tmp.groups())
-                        if (file_time < start) or (file_time > finish): continue
+                        if (file_time < start_day) or (file_time > finish_day):
+                            continue
 
                     if unique_id in ok_files:
                         if ok_files[unique_id][0] < version_number:
@@ -207,13 +227,18 @@ class HTTP_Manager(object):
                     f = ok_files[k]
                     fname = self.remote_path + query_base_path + f[1]
                     if not f[2]: # download remote file
-                        self._get_remote(fname,
-                            self.local_path + query_base_path + f[1])
+                        try:
+                            self._get_remote(fname,
+                                self.local_path + query_base_path + f[1])
+                        except IOError as e:
+                            print('Error encountered - index may be out of date?')
+                            raise
+                            
 
                         # Update the name with the local directory
                         ok_files[k] = (f[0],
-                                self.local_path + query_base_path + f[1],
-                                f[2])
+                            self.local_path + query_base_path + f[1],f[2])
+                        n_downloaded += 1
 
             if verbose:
                 if ok_files:
@@ -226,15 +251,20 @@ class HTTP_Manager(object):
             if verbose:
                 print('Deleting ' + f)
             os.remove(f)
+            n_deleted += 1
+
+        if not silent:
+            print('Query %s: Returning %d (DL: %d, DEL: %d)' %
+                (query, len(ok_files), n_downloaded, n_deleted))
 
         return [f[1] for f in list(ok_files.values())]
 
-maven_http_manager = HTTP_Manager(
-        'http://sprg.ssl.berkeley.edu/data/maven/data/sci/',
-        os.getenv('MAVENPFP_USER_PASS').split(':')[0],
-        os.getenv('MAVENPFP_USER_PASS').split(':')[1],
-        os.getenv('MAVEN_DATA_DIR', os.getenv('SC_DATA_DIR')+'maven/'),
-        verbose=True)
+# maven_http_manager = HTTP_Manager(
+#         'http://sprg.ssl.berkeley.edu/data/maven/data/sci/',
+#         os.getenv('MAVENPFP_USER_PASS').split(':')[0],
+#         os.getenv('MAVENPFP_USER_PASS').split(':')[1],
+#         os.getenv('MAVEN_DATA_DIR', os.getenv('SC_DATA_DIR')+'maven/'),
+#         verbose=False)
 
 if __name__ == '__main__':
     pass

@@ -181,7 +181,8 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
                     start=start, finish=finish,
                     version_function=\
                         lambda x: (x[0], float(x[1]) + float(x[2])/100.),
-                    date_function=lambda x: sdc_interface.yyyymmdd_to_spiceet(x[0]),
+                    date_function=lambda x:
+                                sdc_interface.yyyymmdd_to_spiceet(x[0]),
                     cleanup=cleanup, verbose=verbose
                 )
             )
@@ -206,7 +207,6 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
     if kind == 'lpnt':
         output = dict(time=None, ne=None, te=None, usc=None)
         for f in sorted(files):
-            print(f)
             c = pycdf.CDF(f)
             if output['time'] is None:
                 # inx =
