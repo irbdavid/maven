@@ -13,6 +13,21 @@ from . import sdc_interface
 
 from spacepy import pycdf
 
+# Approximate names used in IDL using this lookup table
+NAME_TRANSFER = [
+    ('+', 'plus'),
+    ('velocity', 'v'),
+    (' ', '_'),
+    ('temperature', 'temp'),
+    ('direction', 'dirn'),
+    ('characteristic', 'char'),
+    ('magnetic', 'mag'),
+    ('spacecraft', 'sc'),
+    ('altitude', 'alt'),
+    ('attitude', 'att'),
+    ('rotation', 'rot'),
+]
+
 class MavenKPData(dict):
     """A helper class that organises the KP data dictionary, allowing getting/setting via attributes as well as dictionary keys."""
     def __init__(self, *args, **kwargs):
@@ -31,50 +46,55 @@ class MavenKPDataDescription(object):
     def plot(self, val):
         pass
 
+# def read_kp_shortnames(filename=None):
+#     """Parse the accompanying list of short names.
+#     This relies on having the columns in the file synced with those in the data.  This seems to be the case. """
+#
+#     output = {}
+#     output[0] = 'spacecraft', 'time'
+#
+#     if filename:
+#         with open(filename) as f:
+#             lines = f.read().splitlines()
+#     else:
+#         lines = kp_shortname_lookup.splitlines()
+#
+#     for line in lines:
+#         if line[0] == '#': continue
+#         if line == '': continue
+#         if not 'data_array.data' in line: continue
+#         var, inx = line.split('=')
+#         if not '.' in var: continue
+#         inst, shortname = var.strip().split('.')
+#         inx = int(inx.split('[')[1][:-1])
+#         output[inx] = (inst, shortname)
+#         # print inx, inst, shortname
+#     return output
 
-def read_kp_shortnames(filename=None):
-    """Parse the accompanying list of short names.
-    This relies on having the columns in the file synced with those in the data.  This seems to be the case. """
+def kp_read_files(files, verbose=False):
+    """Read a list of ASCII KP files, returning data and decscription objects.
 
-    output = {}
-    output[0] = 'spacecraft', 'time'
-
-    if filename:
-        with open(filename) as f:
-            lines = f.read().splitlines()
-    else:
-        lines = kp_shortname_lookup.splitlines()
-
-    for line in lines:
-        if line[0] == '#': continue
-        if line == '': continue
-        var, inx = line.split('=')
-        if not '.' in var: continue
-        inst, shortname = var.strip().split('.')
-        inx = int(inx.split('[')[1][:-1])
-        output[inx] = (inst, shortname)
-        # print inx, inst, shortname
-    return output
-
-def kp_read_files(files):
-    """Read a list of ASCII KP files, returning data and decscription objects."""
+'short' names for the various data products are generated on the fly, and will
+not match those used in the IDL toolkit.  The neccessary information to
+construct an exact copy is not contained in the KP files.
+"""
 
     data = MavenKPData()
     descriptions = MavenKPData()
+    shortnames = {}
 
-    shortnames = read_kp_shortnames()
-
-    for inx in shortnames:
-        inst, name = shortnames[inx]
-        if not inst in data:
-            data[inst] = MavenKPData()
-            descriptions[inst] = MavenKPData()
-        data[inst][name] = None
-        descriptions[inst][name] = MavenKPDataDescription()
+    # # shortnames = read_kp_shortnames()
+    # for inx in shortnames:
+    #     inst, name = shortnames[inx]
+    #     if not inst in data:
+    #         data[inst] = MavenKPData()
+    #         descriptions[inst] = MavenKPData()
+    #     data[inst][name] = None
+    #     descriptions[inst][name] = MavenKPDataDescription()
 
     converters = {}
-    converters[0] = celsius.spiceet
-    converters[210] = lambda x: 1 if x=='I' else 0
+    converters[0] = celsius.spiceet # Conver the ISO UTC string to a SPICEET
+    converters[210] = lambda x: 1 if x=='I' else 0 # Inbound/outbound flag
 
     def parse_float(x):
         try:
@@ -88,11 +108,15 @@ def kp_read_files(files):
 
     first_file = True
     for filename in sorted(files):
+        if verbose:
+            print('Reading %s ' % filename)
 
         # Read information from the header, compare it to the shortnames
         # Populate the description object
         if first_file:
             with open(filename) as f:
+
+                # Trash the header
                 while True:
                     line = f.readline()
                     if 'PARAMETER' in line:
@@ -100,35 +124,66 @@ def kp_read_files(files):
                         break
 
                 i = 0
-                last_non_quality = None
 
                 while True:
                     line = f.readline()
-                    if line.strip() == '#': continue
+                    if line.strip() == '#': break
                     if line == '': continue
                     name = line[1:60].strip()
                     inst = line[60:72].strip()
                     units = line[72:90].strip()
                     fmt  = line[100:122].strip()
                     notes = line[122:].strip()
-                    if 'Quality' in name:
-                        name = last_non_quality + ' Quality'
-                    else:
-                        last_non_quality = name
-                        # print name[:10], inst
 
-                    # print inst, name, i
-                    if i in shortnames:
-                        inst, name = shortnames[i]
-                        descriptions[inst][name].name = name
-                        descriptions[inst][name].units = units
-                        descriptions[inst][name].fmt = fmt
-                        descriptions[inst][name].notes = notes
+                    if (name == 'precision') or (name == 'quality'):
+                        name = last_full_name + '_' + name
                     else:
-                        print("Missing %s at column %d" % (name, i))
+                        for old, new in NAME_TRANSFER:
+                            name = name.replace(old, new)
+
+                        # long_name = re.sub(r'[\W]+','_',long_name)
+                        # long_name = re.sub(r'[_]+','_',long_name)
+
+                        last_full_name = name
+
+                    name = re.sub(r'[^0-9a-zA-Z]+','_',name)
+                    if name[-1] == '_': name = name[:-1]
+
+                    # Shorten the time
+                    if name == 'time_utc_scet': name = 'time'
+
+
+                    inst = line[58:68].lower().strip()
+                    if inst == 'lpw-euv': inst = 'lpw_euv'
+                    if inst == '': inst = 'spacecraft'
+                    if inst == 'spice': inst = 'spacecraft'
+
+                    # Deal with the duplication in LPW
+                    if inst == 'lpw':
+                        for v in ('electron_density_', 'electron_temp_',
+                                'sc_potential_'):
+                        if name == v + 'quality':
+                            name = v + 'quality_min'
+                            if 'quality' in shortnames[i-1][1]:
+                                name = v + 'quality_max'
+
+                    if not inst in data:
+                        data[inst] = MavenKPData()
+                        descriptions[inst] = MavenKPData()
+                        data[inst][name] = None
+                        descriptions[inst][name] = MavenKPDataDescription()
+
+                    shortnames[i] = inst, name
+
+                    descriptions[inst][name].name = name
+                    descriptions[inst][name].units = units
+                    descriptions[inst][name].fmt = fmt
+                    descriptions[inst][name].notes = notes
 
                     i += 1
-                    if i > 210: break
+
+            if verbose:
+                print('Parsed %d columns' % i)
 
         # Now NP gets to read the thing:
         tmp = np.loadtxt(filename, converters=converters).T
@@ -233,7 +288,7 @@ if __name__ == '__main__':
     t1 = t0 + 86400. * 10. - 1
     # t1 = t0 + 86400. - 1.
 
-    data = load_kp_data(t0, t1)
+    data = maven.kp.load_kp_data(t0, t1)
     celsius.setup_time_axis()
 
     plt.plot(data.time, data.swia.hplus_density, 'k-')
