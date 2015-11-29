@@ -1,8 +1,5 @@
-"""Interface for the MAVEN SDC at LASP
-
-
+"""Interface for the MAVEN SDC at LASP.
 """
-
 
 import celsius
 import numpy as np
@@ -176,7 +173,6 @@ class HTTP_Manager(object):
             update_index = True
             if os.path.exists(index_path):
                 age = py_time.time() - os.path.getmtime(index_path)
-                print(index_path, age)
                 if age < self.update_interval:
                     update_index = False
 
@@ -233,7 +229,7 @@ class HTTP_Manager(object):
                         except IOError as e:
                             print('Error encountered - index may be out of date?')
                             raise
-                            
+
 
                         # Update the name with the local directory
                         ok_files[k] = (f[0],
@@ -259,12 +255,12 @@ class HTTP_Manager(object):
 
         return [f[1] for f in list(ok_files.values())]
 
+
+
+if __name__ == '__main__':
 # maven_http_manager = HTTP_Manager(
 #         'http://sprg.ssl.berkeley.edu/data/maven/data/sci/',
 #         os.getenv('MAVENPFP_USER_PASS').split(':')[0],
 #         os.getenv('MAVENPFP_USER_PASS').split(':')[1],
 #         os.getenv('MAVEN_DATA_DIR', os.getenv('SC_DATA_DIR')+'maven/'),
 #         verbose=False)
-
-if __name__ == '__main__':
-    pass
