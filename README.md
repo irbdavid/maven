@@ -32,6 +32,16 @@ containing your username and password:
 5. Run tests?
 
 
+Known Issues
+------------
+
+* This software is un-tested, and will definitely contain bugs.  Please report them, or patch them, but don't ignore them.  
+* MAVEN L2 data is still evolving, and support is not included here for reading 'old' versions of files.  Only the most recent version and release of any file is obtained, and this has occasionally lead to broken compatibility, e.g. if new columns are added or re-ordered in an ASCII file.  CDF files are more robust in this respect.
+* Reading of KP data is implemented, but the naming of variables will not match the IDL toolkit, as the necessary information is not contained in the KP files themselves.  Instead, shortened variable names are generated on the fly using a small lookup table, e.g.:
+    'H+ temperature STATIC' becomes 'static.hplus_temp'
+While not ideal, this should at least be 'safe', and prevent naming accidents that could easily occur with something hard-coded.
+
+
 Examples of use
 ---------------
 ```python
