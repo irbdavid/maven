@@ -3,12 +3,13 @@
 import numpy as np
 import pylab as plt
 import os
+import re
 
 import spiceypy
 import celsius
 from matplotlib.colors import LogNorm
 
-from .kp_shortname_lookup import kp_shortname_lookup
+# from .kp_shortname_lookup import kp_shortname_lookup
 from . import sdc_interface
 
 from spacepy import pycdf
@@ -129,7 +130,7 @@ construct an exact copy is not contained in the KP files.
                     line = f.readline()
                     if line.strip() == '#': break
                     if line == '': continue
-                    name = line[1:60].strip()
+                    name = line[1:60].strip().lower()
                     inst = line[60:72].strip()
                     units = line[72:90].strip()
                     fmt  = line[100:122].strip()
@@ -161,15 +162,17 @@ construct an exact copy is not contained in the KP files.
                     # Deal with the duplication in LPW
                     if inst == 'lpw':
                         for v in ('electron_density_', 'electron_temp_',
-                                'sc_potential_'):
-                        if name == v + 'quality':
-                            name = v + 'quality_min'
-                            if 'quality' in shortnames[i-1][1]:
-                                name = v + 'quality_max'
+                                                'sc_potential_'):
+                            if name == (v + 'quality'):
+                                name = v + 'quality_min'
+                                if 'quality' in shortnames[i-1][1]:
+                                    name = v + 'quality_max'
 
                     if not inst in data:
                         data[inst] = MavenKPData()
                         descriptions[inst] = MavenKPData()
+
+                    if not name in data[inst]:
                         data[inst][name] = None
                         descriptions[inst][name] = MavenKPDataDescription()
 

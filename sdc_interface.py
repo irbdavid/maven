@@ -230,7 +230,6 @@ class HTTP_Manager(object):
                             print('Error encountered - index may be out of date?')
                             raise
 
-
                         # Update the name with the local directory
                         ok_files[k] = (f[0],
                             self.local_path + query_base_path + f[1],f[2])
@@ -258,6 +257,7 @@ class HTTP_Manager(object):
 
 
 if __name__ == '__main__':
+    pass
 # maven_http_manager = HTTP_Manager(
 #         'http://sprg.ssl.berkeley.edu/data/maven/data/sci/',
 #         os.getenv('MAVENPFP_USER_PASS').split(':')[0],
