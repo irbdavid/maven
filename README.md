@@ -29,7 +29,6 @@ containing your username and password:
 4. At a minimum, set the local directory that will be used for data storage:
     `export SC_DATA_DIR="~/data"`
 4. To provide comapatability with a parallel use of the Berkeley IDL code base, `MAVEN_DATA_DIR` and `MAVEN_KERNEL_DIR` can be used to specify the locations of existing local data.
-5. Run tests?
 
 
 Known Issues
