@@ -55,6 +55,7 @@ finish = start + 86400. -1. # just to avoid loading two files instead of one.
 
 lpw_data = maven.lpw.lpw_l2_load(kind='lpnt', start=start, finish=finish)
 
+# Plot some LPW data
 fig, axs = plt.subplots(3,1,sharex=True)
 
 plt.sca(axs[0])
@@ -75,4 +76,35 @@ plt.plot(time, pos_mso[2], 'b-')
 celsius.setup_time_axis()
 
 plt.show()
+
+# Plot some KP densities:
+data = maven.kp.load_kp_data(start, finish)
+
+fig, axs = plt.subplots(3,1,sharex=True)
+
+plt.sca(axs[0])
+plt.plot(data.time, data.swia.hplus_density, 'k-')
+plt.plot(data.time, data.static.oplus_density, 'b-')
+plt.plot(data.time, data.static.o2plus_density, 'b--')
+plt.plot(data.time, data.ngims.ion_density_amu_16plus, 'm-')
+plt.plot(data.time, data.ngims.ion_density_amu_32plus, 'm--')
+plt.plot(data.time, data.lpw.electron_density, 'g-')
+
+plt.yscale('log')
+plt.ylabel('Density / cc')
+
+plt.sca(axs[1])
+plt.plot(data.time,data.spacecraft.sc_alt_w_r_t_aeroid)
+
+plt.sca(axs[2])
+plt.plot(data.time,data.mag.mag_field_mso_x, 'r')
+plt.plot(data.time,data.mag.mag_field_mso_y, 'g')
+plt.plot(data.time,data.mag.mag_field_mso_z, 'b')
+
+celsius.setup_time_axis()
+plt.show()
+
+
+
+
 ```
