@@ -183,12 +183,12 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
                         lambda x: (x[0], float(x[1]) + float(x[2])/100.),
                     date_function=lambda x:
                                 sdc_interface.yyyymmdd_to_spiceet(x[0]),
-                    cleanup=cleanup, verbose=verbose
+                    verbose=verbose
                 )
             )
         month += 1
         if month > 12:
-            month = 0o1
+            month = 1
             year += 1
         t = celsius.spiceet('%d-%02d-01T00:00' % (year, month))
 
@@ -278,6 +278,24 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
                                 np.array(c['data']).T))
         # print 'Warning: spectra output is not interpolated!'
             c.close()
+
+    elif kind == 'lpiv':
+        output = dict(time=None, current=None, volt=None)
+        for f in sorted(files):
+            c = pycdf.CDF(f)
+
+            if output['time'] is None:
+                output['time'] = np.array(c['time_unix'])
+                output['current'] = [np.array(c['data']).T]
+                output['volt'] = [np.array(c['volt']).T]
+            else:
+                output['time'] = np.hstack((output['time'],
+                                np.array(c['time_unix'])))
+                output['current'].append(np.array(c['data']).T)
+                output['volt'].append(np.array(c['volt']).T)
+
+            c.close()
+
     else:
         raise ValueError("Input kind='%s' not recognized" % kind)
 
@@ -370,6 +388,111 @@ Doesn't interpolate linearly, but just rebins data.  Appropriate for presentatio
     if colorbar:
         cbar = plt.colorbar(cax=celsius.make_colorbar_cax())
         cbar.set_label(r'V$^2$ m$^{-2}$ Hz$^{-1}$')
+    else:
+        cbar = None
+
+    return img, img_obj, cbar
+
+def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
+    start=None, finish=None,
+    voltage=None, max_times=8912, imin=None, imax=None,
+    labels=True, colorbar=True, full_resolution=False, log_abs=True):
+    """Plot LP IV sweeps as a time series. Interpolation to regular voltage and time axis as appropriate for presentation purposes, but don't do science with the results."""
+
+    if ax is None:
+        ax = plt.gca()
+    else:
+        plt.sca(ax)
+
+    if cmap is None:
+        plt.set_cmap('Spectral_r')
+        cmap = plt.get_cmap()
+        cmap.set_bad('grey')
+
+    t0 = s['time'][0]
+    t1 = s['time'][-1]
+
+    if voltage is None:
+        voltage = np.linspace(-20., 20., 512)
+
+    if full_resolution:
+        voltage = np.arange(-20., 20., 0.01)
+
+    n_times = np.floor((t1 - t0) / 4.)
+
+    if (n_times > 4096) and full_resolution:
+        print('You are attempting to create a very, very large image...')
+
+    if (n_times < max_times) or full_resolution:
+        dt = 4.
+    else:
+        dt = (t1 - t0) / max_times
+
+    tnew = np.arange(t0, t1, dt)
+
+    if not norm:
+        norm = LogNorm(1e-9, 1e-3)
+        if not log_abs:
+            norm = plt.Normalize(1e-3, 1e-3)
+
+
+
+    extent = (t0, t1, voltage[0], voltage[-1])
+    # Compute expansion of frequency axis
+    # freq_inx = []
+    # fnext = s['freq'][1]
+    # f_inx = 0
+    # i = 0
+    # while True:
+    #     if fnext > fnew[i]:
+    #         freq_inx.append(f_inx)
+    #         i+=1
+    #         if i == max_frequencies: break
+    #     else:
+    #         f_inx += 1
+    #         fnext = s['freq'][f_inx]
+    # freq_inx = np.array(freq_inx)
+
+    # Interpolate voltages
+    tmp = []
+    t = t0
+    img = np.empty((voltage.shape[0], tnew.shape[0])) + np.nan
+    inx_new = 0
+    inx_old = boom
+    for current, old_voltage in zip(s['current'], s['volt']):
+        i = boom
+        while i < current.shape[1]:
+            while tnew[inx_new] < s['time'][inx_old]:
+                img[:, inx_new] = np.interp(voltage, old_voltage[:,i],
+                        current[:, i],
+                        left=np.nan, right=np.nan)
+                inx_new += 1
+                if inx_new >= tnew.shape[0]:
+                    break
+            i += 2
+            inx_old += 2
+            if inx_new >= tnew.shape[0]:
+                break
+
+
+    # raise RuntimeError()
+    # print(img.shape)
+    print(extent)
+    if log_abs:
+        img = np.abs(img)
+
+    img_obj = plt.imshow(img, cmap=cmap, norm=norm, extent=extent,
+            origin='lower', interpolation='nearest')
+
+    # plt.yscale('log')
+    plt.ylim(voltage[0], voltage[-1])
+    plt.xlim(t0, t1)
+
+    if labels:
+        plt.ylabel(r'U$_{Bias}$ / V')
+    if colorbar:
+        cbar = plt.colorbar(cax=celsius.make_colorbar_cax())
+        cbar.set_label(r'i / A')
     else:
         cbar = None
 
