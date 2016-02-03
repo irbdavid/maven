@@ -139,7 +139,7 @@ def plot_swia_l2_summary(swia_data, max_times=4096, cmap=None, norm=None,
         norm=norm, cmap=cmap
     )
     plt.yscale('log')
-    plt.xlim(t0, t1)
+    # plt.xlim(t0, t1)
     plt.ylim(swia_data['energy'][0], swia_data['energy'][-1])
 
     if labels:
