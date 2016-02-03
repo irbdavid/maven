@@ -18,6 +18,7 @@
         "/spk/mar$VERSION.bsp",
 	    "/spk/maven_orb.bsp$FORCE",
         "/ck/mvn_sc_rec_*_v$VERSION.bc",
+        "/spk/trj_orb_*_reference_v$VERSION.bsp",
 	    "/spk/maven_orb_rec_*_v$VERSION.bsp",
 	    "/spk/maven_orb_rec_*_v$VERSION.orb",
 	    "/spk/maven_orb_rec.orb$FORCE",
