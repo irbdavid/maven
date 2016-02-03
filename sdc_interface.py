@@ -31,6 +31,7 @@ def merge_attrs(dict_out, name, dict_in, input_name=None, transpose=False):
         dict_out[name] = np.hstack( (dict_out[name], v) )
 
 class IndexParser(HTMLParser):
+    """Extract all links from an HTML page"""
     def __init__(self):
         HTMLParser.__init__(self)
         self.files = []
@@ -49,9 +50,24 @@ class IndexParser(HTMLParser):
 
 class HTTP_Manager(object):
     """Used to transfer files via HTTP, following Berkeley's system"""
-
     def __init__(self, remote_path, username, password, local_path, update_interval=86400., verbose=False, silent=False):
-        """Setup"""
+        """Create a HTTP_Manager
+Args:
+    remote_path: base URL to copy from
+    username: user name to authenticate with, if required
+    password: password for the user
+    local_path: base URL to copy to
+    update_interval: time in seconds before an index.html file is considered
+        out of date
+    verbose: print out extra info
+    silent: print nothing.
+
+Returns:
+    Instance.
+
+Example:
+
+"""
         self.remote_path = remote_path
         self.username = username
         self.password = password
@@ -91,20 +107,31 @@ class HTTP_Manager(object):
     def query(self, query, version_function=None, date_function=None,
                 start=None, finish=None, cleanup=False, verbose=None,
                 silent=None):
-        """Takes a query, returns a list of local files that match.  If set, will first query the remote
-        server, download missing files, and then delete local files that match the query but are no longer
-        present on the remote.
+        """Takes a query, returns a list of local files that match.
 
-        The implicit assumption here is that the remote directory is PERFECTLY maintained.
+Will first query the remote server, download missing files, and then delete local files that match the query but are no longer present on the remote. The implicit assumption here is that the remote directory is PERFECTLY maintained.
 
-        :query: e.g. 'sci/lpw/l2/2015/01/mvn_lpw_l2_lpnt_*_v*_r*.cdf'
-        :version_function: takes the matched wildcards from the query, and converts them to a number used to compare
-            versions (higher = better)
-        :date_function: takes the matched wildcards from the query, and converts to a date for the content of the file
-        :start: start date, ignored if not set
-        :finish: finsh date, ignored if not set. finish must be set if start is (use np.inf, if you want)
-        :returns: List of local files, freshly downloaded if necessary, that satisfy the query
+Args:
+    query: query string with wildcards to locate a file on the remote server,
+        e.g. 'sci/lpw/l2/2015/01/mvn_lpw_l2_lpnt_*_v*_r*.cdf'
 
+    version_function: takes the expanded wildcards from the query, and converts
+        them to a number used to compare versions and releases (higher=better).
+        For example:
+            lambda x: (x[0], float(x[1]) + float(x[2])/100.)
+        to generate 1.02 for V1, R2 for the above query (2nd and 3rd wildcards)
+
+    date_function: takes the expanded wildcards from the query, and converts to
+        a date for the content of the file, for example:
+            lambda x: yyyymmdd_to_spiceet(x[0])
+        for the above query example.
+
+    start: start date SPICEET, ignored if not set
+    finish: finish date, ignored if not set. 'finish' must be set if 'start' is
+        (can use np.inf, if you want)
+
+Returns: List of local files, freshly downloaded if necessary, that satisfy the
+    query supplied.
         """
 
         file_list = []
