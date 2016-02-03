@@ -32,8 +32,12 @@ REQUIRED_KERNELS = [
 
 DIRECTORY = None
 
-def load_kernels(force=False, directory=DIRECTORY):
+def load_kernels(force=False, directory=DIRECTORY, full_reload=False):
     global KERNELS_LOADED
+
+    if full_reload:
+        spiceypy.kclear()
+        KERNELS_LOADED = False
 
     if not force:
         if KERNELS_LOADED: return
