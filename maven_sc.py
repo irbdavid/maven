@@ -1,7 +1,7 @@
 import celsius
 import numpy as np
 import os
-from glob import glob
+from glob import glob, iglob
 
 # import spiceypy
 import spiceypy
@@ -93,7 +93,7 @@ def load_kernels(time=None, force=False, verbose=False,
         for k in REQUIRED_KERNELS:
 
             if '*' in k:
-                files = glob.glob(kernel_directory + k)
+                files = glob(kernel_directory + k)
                 m = -1
                 file_to_load = ''
                 for f in files:
@@ -103,7 +103,10 @@ def load_kernels(time=None, force=False, verbose=False,
                         file_to_load = f
                 if verbose:
                     print(file_to_load)
-                spiceypy.furnsh(file_to_load)
+                if file_to_load:
+                    spiceypy.furnsh(file_to_load)
+                else:
+                    raise IOError("No match for %s" % k)
 
             else:
                 spiceypy.furnsh(kernel_directory + k)
@@ -111,7 +114,7 @@ def load_kernels(time=None, force=False, verbose=False,
 
         if start_int > -999999:
             # Load time-sensitive kenrels
-            for f in glob.iglob(kernel_directory + 'spk/maven_orb_rec_*.b'):
+            for f in iglob(kernel_directory + 'spk/maven_orb_rec_*.b'):
                 this_int = int(f.split('_')[3])
                 if this_int < start_int: continue
                 if this_int > finish_int: continue
