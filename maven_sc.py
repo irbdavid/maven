@@ -25,49 +25,131 @@ REQUIRED_KERNELS = [
         'spk/de430s.bsp',
         'spk/mar097s.bsp',
         'spk/maven_orb.bsp',
-        'spk/maven_orb_rec_*.bsp',
         'spk/maven_orb_rec.bsp',
         # 'RSSD0002.TF',
                 ]
 
 DIRECTORY = None
 
-def load_kernels(force=False, directory=DIRECTORY, full_reload=False):
-    global KERNELS_LOADED
+last_spice_time_window = 'NONE_INITIALIZED'
 
-    if full_reload:
-        spiceypy.kclear()
-        KERNELS_LOADED = False
+def check_spice_furnsh(*args, **kwargs):
+    load_kernels(*args, **kwargs)
 
-    if not force:
-        if KERNELS_LOADED: return
+def load_kernels(time=None, force=False, verbose=False,
+                load_all=False, keep_previous=False):
+    """Load spice kernels, with a stateful thing to prevent multiple calls"""
+    global last_spice_time_window
 
-    if not directory:
-        directory = os.getenv("MAVEN_KERNEL_DIR")
+    if load_all:
+        # Launch to now + 10 yrs
+        start = celsius.spiceet("2013-11-19T00:00")
+        finish = celsius.spiceet(celsius.now() + 10.*86400.*365.)
+
+    if time is None:
+        start = None
+        finish = None
+        start_str = 'NO_TIME_SET'
+        finish_str = ''
+        start_int=-999999
+        finish_int=-999999
+    else:
+        if hasattr(time, '__len__'):
+            start = time[0]
+            finish = time[-1]
+
+        else:
+            start = time
+            finish = time
+        start_str = celsius.utcstr(start, 'ISOC')
+        finish_str = celsius.utcstr(finish, 'ISOC')
+        start_int = int(start_str[2:4] + start_str[5:7] + '01')
+        finish_int = int(finish_str[2:4] + finish_str[5:7] + '01')
+        start_str = '%06d' % start_int
+        finish_str = '%06d' % finish_int
+
+    this_spice_time_window = start_str + finish_str
+
+    if not 'NONE' in last_spice_time_window:
+        if last_spice_time_window == this_spice_time_window:
+            if verbose:
+                print('LOAD_KERNELS: Interval unchanged')
+            return
+
+        if keep_previous:
+            if verbose:
+                print('LOAD_KERNELS: Keeping loaded kernels')
+            return
+
+    last_spice_time_window = this_spice_time_window
+
+    spiceypy.kclear()
 
     try:
+        kernel_directory = os.getenv('MAVEN_KERNEL_DIR')
+        if verbose:
+            print('LOAD_KERNELS: Registering kernels:')
+
         for k in REQUIRED_KERNELS:
-            fname = directory + k
-            if '*' in fname:
-                matches = glob(fname)
-                if not matches:
-                    raise IOError("Missing: %s" % fname)
-                matches = sorted(matches, key=lambda x:os.path.getmtime(x))
-                for m in matches:
-                    spiceypy.furnsh(m)
+
+            if '*' in k:
+                files = glob.glob(kernel_directory + k)
+                m = -1
+                file_to_load = ''
+                for f in files:
+                    t = os.path.getmtime(f)
+                    if t > m:
+                        m = t
+                        file_to_load = f
+                if verbose:
+                    print(file_to_load)
+                spiceypy.furnsh(file_to_load)
+
             else:
-                spiceypy.furnsh(fname)
+                spiceypy.furnsh(kernel_directory + k)
+                if verbose: print(kernel_directory + k)
+
+        if start_int > -999999:
+            # Load time-sensitive kenrels
+            for f in glob.iglob(kernel_directory + 'spk/maven_orb_rec_*.b'):
+                this_int = int(f.split('_')[3])
+                if this_int < start_int: continue
+                if this_int > finish_int: continue
+                spiceypy.furnsh(f)
+                if verbose: print(f)
 
     except Exception as e:
-        KERNELS_LOADED = False
-        for k in REQUIRED_KERNELS:
-            try:
-                spiceypy.unload(directory + k)
-            except IOError as e:
-                pass
+        spiceypy.kclear()
+        last_spice_time_window = 'NONE_ERROR'
+        raise
+
+    print('LOAD_KERNELS: Loaded %s' % last_spice_time_window)
+
+def unload_kernels():
+    """Unload kernels"""
+
+    global last_spice_time_window
+
+    try:
+        spiceypy.kclear()
+
+        # But, we always want the LSK loaded.  This should be safe provided
+        # a) celsius was loaded first (safe assertion, this code won't work
+        # without it), meaning that the latest.tls was updated if needs be
+        # b) uptime for this instance is less than the lifetime of a tls kernel
+        # (years?)
+        spiceypy.furnsh(
+            getenv("SC_DATA_DIR", default=expanduser('~/data/')) + \
+            'latest.tls'
+        )
+
+        last_spice_time_window = 'NONE_UNLOADED'
+    except RuntimeError as e:
+        last_spice_time_window = 'NONE_ERROR'
         raise e
 
-    KERNELS_LOADED = True
+load_spice_kernels = load_kernels # Synonym, innit
+unload_spice_kernels     = unload_kernels
 
 def describe_loaded_kernels(kind='all'):
     """Print a list of loaded spice kernels of :kind:"""
@@ -92,7 +174,8 @@ def describe_loaded_kernels(kind='all'):
 def position(time, frame='IAU_MARS', target='MAVEN',
             observer='MARS', correction='NONE'):
     """Wrapper around spiceypy.spkpos that handles array inputs, and provides useful defaults"""
-    load_kernels()
+    load_kernels(time)
+
     def f(t):
         try:
             pos, lt = spiceypy.spkpos(target, t, frame, correction, observer)
@@ -116,6 +199,9 @@ def mso_position(time):
 
 def reclat(pos):
     """spiceypy.reclat with a wrapper for ndarrays"""
+
+    check_spice_furnsh(keep_previous=True)
+
     if isinstance(pos, np.ndarray):
         if len(pos.shape) > 1:
             return np.array([spiceypy.reclat(p) for p in pos.T]).T
@@ -123,6 +209,7 @@ def reclat(pos):
 
 def recpgr(pos, body="MARS"):
     """spiceypy.recpgr for mars, with a wrapper for ndarrays"""
+    check_spice_furnsh(keep_previous=True)
 
     if body == "MARS":
        r, e = 3396.2, 0.005888934691714269
@@ -200,7 +287,7 @@ def mso_r_lat_lon_position(time, mso=False, sza=False, **kwargs):
 
 def sub_solar_longitude(et):
     """Sub-solar longitude in degrees at `et`."""
-    load_kernels()
+    load_kernels(et)
     def f(t):
         pos, lt = spiceypy.spkpos("SUN", t, 'IAU_MARS', "NONE", "MARS")
         return np.array(pos)
@@ -216,7 +303,7 @@ def sub_solar_longitude(et):
 
 def sub_solar_latitude(et, body='MARS'):
     """Sub-solar latitude in degrees at `et`."""
-    load_kernels()
+    load_kernels(et)
     def f(t):
         pos, lt = spiceypy.spkpos("SUN", t, 'IAU_' + body, "NONE", body)
         return np.array(pos)
