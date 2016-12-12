@@ -17,8 +17,8 @@ LAUNCH_DATE = celsius.spiceet('2013-11-17T18:28')
 
 
 REQUIRED_KERNELS = [
-        'fk/maven_*.tf',
         'lsk/naif*.tls',
+        'fk/maven_*.tf',
         'pck/pck*.tpc',
         'sclk/MVN_SCLKSCET.*.tsc',
         'spk/de421.bsp',
@@ -31,7 +31,7 @@ REQUIRED_KERNELS = [
 
 DIRECTORY = None
 
-last_spice_time_window = 'NONE_INITIALIZED'
+# last_spice_time_window = 'NONE_INITIALIZED'
 
 def check_spice_furnsh(*args, **kwargs):
     load_kernels(*args, **kwargs)
@@ -39,7 +39,8 @@ def check_spice_furnsh(*args, **kwargs):
 def load_kernels(time=None, force=False, verbose=False,
                 load_all=False, keep_previous=False):
     """Load spice kernels, with a stateful thing to prevent multiple calls"""
-    global last_spice_time_window
+    last_spice_time_window = getattr(spiceypy,
+            'last_spice_time_window', 'MVN:NONE')
 
     if load_all:
         # Launch to now + 10 yrs
@@ -73,22 +74,22 @@ def load_kernels(time=None, force=False, verbose=False,
     if not 'NONE' in last_spice_time_window:
         if last_spice_time_window == this_spice_time_window:
             if verbose:
-                print('LOAD_KERNELS: Interval unchanged')
+                print('LOAD_KERNELS [MVN]: Interval unchanged')
             return
 
         if keep_previous:
             if verbose:
-                print('LOAD_KERNELS: Keeping loaded kernels')
+                print('LOAD_KERNELS [MVN]: Keeping loaded kernels')
             return
 
-    last_spice_time_window = this_spice_time_window
+    spiceypy.last_spice_time_window = 'MVN:' + this_spice_time_window
 
     spiceypy.kclear()
 
     try:
         kernel_directory = os.getenv('MAVEN_KERNEL_DIR')
         if verbose:
-            print('LOAD_KERNELS: Registering kernels:')
+            print('LOAD_KERNELS [MVN]: Registering kernels:')
 
         for k in REQUIRED_KERNELS:
 
@@ -112,26 +113,48 @@ def load_kernels(time=None, force=False, verbose=False,
                 spiceypy.furnsh(kernel_directory + k)
                 if verbose: print(kernel_directory + k)
 
+        # time sensitive kernels
+        load_count = 0
+
+        # used to determine whether or not to load the most recent, unnumbered
+        # rolling update kernel
+        max_encountered = -99999
+
         if start_int > -999999:
             # Load time-sensitive kenrels
-            for f in iglob(kernel_directory + 'spk/maven_orb_rec_*.b'):
-                this_int = int(f.split('_')[3])
-                if this_int < start_int: continue
-                if this_int > finish_int: continue
+            for f in iglob(kernel_directory + 'spk/maven_orb_rec_*.bsp'):
+                this_start = int(f.split('_')[3])
+                this_finish = int(f.split('_')[4])
+                if this_finish < start_int: continue
+                if this_start > finish_int: continue
                 spiceypy.furnsh(f)
+                load_count += 1
                 if verbose: print(f)
+
+                if this_start > max_encountered: max_encountered = this_start
+                if this_finish > max_encountered: max_encountered = this_finish
+
+            if max_encountered < finish_int:
+                # load the rolling-update kernel too
+                f = kernel_directory + 'spk/maven_orb_rec.bsp'
+                # spiceypy.furnsh(f)
+                load_count += 1
+                if verbose: print(f)
+
+            if load_count == 0:
+                raise IOError("No kernels matched for time period")
 
     except Exception as e:
         spiceypy.kclear()
-        last_spice_time_window = 'NONE_ERROR'
+        spiceypy.last_spice_time_window = 'MVN:NONE_ERROR'
         raise
 
-    print('LOAD_KERNELS: Loaded %s' % last_spice_time_window)
+    print('LOAD_KERNELS [MVN]: Loaded %s' % spiceypy.last_spice_time_window)
 
 def unload_kernels():
     """Unload kernels"""
 
-    global last_spice_time_window
+    # global last_spice_time_window
 
     try:
         spiceypy.kclear()
@@ -142,13 +165,13 @@ def unload_kernels():
         # b) uptime for this instance is less than the lifetime of a tls kernel
         # (years?)
         spiceypy.furnsh(
-            getenv("SC_DATA_DIR", default=expanduser('~/data/')) + \
+            os.getenv("SC_DATA_DIR", default=expanduser('~/data/')) + \
             'latest.tls'
         )
 
-        last_spice_time_window = 'NONE_UNLOADED'
+        spiceypy.last_spice_time_window = 'MVN:NONE_UNLOADED'
     except RuntimeError as e:
-        last_spice_time_window = 'NONE_ERROR'
+        spiceypy.last_spice_time_window = 'MVN:NONE_ERROR'
         raise e
 
 load_spice_kernels = load_kernels # Synonym, innit
@@ -175,9 +198,9 @@ def describe_loaded_kernels(kind='all'):
 
 
 def position(time, frame='IAU_MARS', target='MAVEN',
-            observer='MARS', correction='NONE'):
+            observer='MARS', correction='NONE', verbose=False):
     """Wrapper around spiceypy.spkpos that handles array inputs, and provides useful defaults"""
-    load_kernels(time)
+    load_kernels(time, verbose=verbose)
 
     def f(t):
         try:
@@ -192,13 +215,13 @@ def position(time, frame='IAU_MARS', target='MAVEN',
         return f(time)
 
 
-def iau_mars_position(time):
+def iau_mars_position(time, **kwargs):
     """An alias: position(time, frame='IAU_MARS')"""
-    return position(time, frame='IAU_MARS')
+    return position(time, frame='IAU_MARS', **kwargs)
 
-def mso_position(time):
+def mso_position(time, **kwargs):
     """An alias: position(time, frame='MSO')"""
-    return position(time, frame='MAVEN_MSO')
+    return position(time, frame='MAVEN_MSO', **kwargs)
 
 def reclat(pos):
     """spiceypy.reclat with a wrapper for ndarrays"""

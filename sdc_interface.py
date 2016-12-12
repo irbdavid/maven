@@ -156,8 +156,9 @@ Returns: List of local files, freshly downloaded if necessary, that satisfy the
         if check_time and (date_function is None):
             raise ValueError("Start and finish are set, but date_function is not")
 
-        start_day = celsius.spiceet(celsius.utcstr(start, 'ISOC')[:10])
-        finish_day = celsius.spiceet(celsius.utcstr(finish, 'ISOC')[:10]) \
+        if check_time:
+            start_day = celsius.spiceet(celsius.utcstr(start, 'ISOC')[:10])
+            finish_day = celsius.spiceet(celsius.utcstr(finish, 'ISOC')[:10]) \
                                 + 86398. #1 day - 1s - 1 (possible) leap second
 
         # if verbose:
