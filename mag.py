@@ -25,8 +25,10 @@ def load_mag_l2(start, finish, kind='ss1s',
     while t < finish:
         files.extend(
                 http_manager.query(
-        'mag/l2/%04d/%02d/mvn_mag_l2_%04d%03d%s_%04d%02d%02d_v*_r*.sts' % \
-                                            (t.year, t.month, t.year, t.doy, kind, t.year,t.month,t.day),
+#        'mag/l2/%04d/%02d/mvn_mag_l2_%04d%03d%s_%04d%02d%02d_v*_r*.sts' % \
+#                                            (t.year, t.month, t.year, t.doy, kind, t.year,t.month,t.day),
+        'mag/l2/%04d/%02d/mvn_mag_l2_%04d%03d%s_*_v*_r*.sts' %
+                    (t.year, t.month, t.year, t.doy, kind),
                     start=start, finish=finish,
                     version_function=\
                         lambda x: (x[0], float(x[1]) + float(x[2])/100.),
@@ -34,7 +36,7 @@ def load_mag_l2(start, finish, kind='ss1s',
                     cleanup=cleanup, verbose=verbose
                 )
             )
-        t += 86400.
+        t = celsius.CelsiusTime(t.spiceet + 86400.)
 
     if cleanup:
         print('MAG L2 Cleanup complete')
@@ -60,8 +62,6 @@ def load_mag_l2(start, finish, kind='ss1s',
             else:
                 output['time'] = np.hstack((output['time'],np.array(c[0])))
                 output['b'] = np.hstack((output['b'],np.array(c[1:])))
-
-            c.close()
 
     else:
         raise ValueError("Input kind='%s' not recognized" % kind)
