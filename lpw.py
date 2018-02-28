@@ -3,7 +3,7 @@ import pylab as plt
 import spiceypy
 import celsius
 
-from . import sdc_interface
+from maven import sdc_interface
 
 from functools import wraps
 from matplotlib.colors import LogNorm
@@ -506,10 +506,10 @@ def cleanup(start=None, finish=None):
     lpw_l2_load(start, finish, cleanup=True, verbose=True)
 
 if __name__ == '__main__':
+    import maven
+    import mex
 
     if False:
-        import maven
-        import mex
 
         t0 = celsius.spiceet("2015-01-07T00:00")
         c = get_hf_act_densities(t0, t0 + 86400.*2., verbose=True)
