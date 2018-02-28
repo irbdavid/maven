@@ -44,8 +44,9 @@ print('Read information for %d orbits' % len(orbits))
 stored_data = {}
 
 # Instrument stuff
-from . import lpw
 from . import swea
+from . import lpw
+from . import mag
 from . import swia
 from . import ngims
 from . import kp
