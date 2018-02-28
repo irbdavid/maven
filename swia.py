@@ -93,12 +93,14 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
                 output['velocity'] = np.array(c['velocity']).T
                 output['temperature'] = np.array(c['temperature']).T
             else:
-                merge_attrs(output, 'time', c, 'time_unix')
-                merge_attrs(output, 'quality_flag', c)
-                merge_attrs(output, 'density', c)
+                sdc_interface.merge_attrs(output, 'time', c, 'time_unix')
+                sdc_interface.merge_attrs(output, 'quality_flag', c)
+                sdc_interface.merge_attrs(output, 'density', c)
 
-                merge_attrs(output, 'velocity', c, transpose=True)
-                merge_attrs(output, 'temperature', c, transpose=True)
+                sdc_interface.merge_attrs(output, 'velocity', c,
+                                transpose=True)
+                sdc_interface.merge_attrs(output, 'temperature', c,
+                                transpose=True)
 
             c.close()
 
