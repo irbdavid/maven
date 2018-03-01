@@ -1,6 +1,7 @@
 import celsius
 import numpy as np
 import os
+import os.path
 from glob import glob, iglob
 
 # import spiceypy
@@ -165,7 +166,7 @@ def unload_kernels():
         # b) uptime for this instance is less than the lifetime of a tls kernel
         # (years?)
         spiceypy.furnsh(
-            os.getenv("SC_DATA_DIR", default=expanduser('~/data/')) + \
+            os.getenv("SC_DATA_DIR", default=os.path.expanduser('~/data/')) + \
             'latest.tls'
         )
 
