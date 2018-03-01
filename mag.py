@@ -25,8 +25,6 @@ def load_mag_l2(start, finish, kind='ss1s',
     while t < finish:
         files.extend(
                 http_manager.query(
-#        'mag/l2/%04d/%02d/mvn_mag_l2_%04d%03d%s_%04d%02d%02d_v*_r*.sts' % \
-#                                            (t.year, t.month, t.year, t.doy, kind, t.year,t.month,t.day),
         'mag/l2/%04d/%02d/mvn_mag_l2_%04d%03d%s_*_v*_r*.sts' %
                     (t.year, t.month, t.year, t.doy, kind),
                     start=start, finish=finish,
@@ -51,10 +49,23 @@ def load_mag_l2(start, finish, kind='ss1s',
         output = {'time':None, 'def':None}
         for f in sorted(files):
 
-            c = np.loadtxt(f, skiprows=145, usecols=[6,7,8,9]).T
-            c[0] = c[0] * 86400. + celsius.spiceet(
-                f.split('_')[-3][:4] + '-001T00:00'
-            )
+            # header size is variable. Find four END_OBJECT in a row
+            count = 0
+            skip = 1
+            with open(f,'r') as ff:
+                for line in ff.readlines():
+                    skip += 1
+                    if line.strip() == 'END_OBJECT':
+                        count += 1
+                    else:
+                        count = 0
+                    if count == 3:
+                        break
+
+            c = np.loadtxt(f, skiprows=skip, usecols=[6,7,8,9]).T
+            s = f.split('_')[-3][:4] + '-001T00:00'
+            c[0] = (c[0]-1.0) * 86400. + celsius.spiceet(s)
+
             if output['time'] is None:
                 output['time'] = np.array(c[0])
                 output['b'] = np.array(c[1:])
@@ -65,8 +76,6 @@ def load_mag_l2(start, finish, kind='ss1s',
 
     else:
         raise ValueError("Input kind='%s' not recognized" % kind)
-
-    output['time'] = output['time'] + celsius.spiceet("1970-01-01T00:00")
 
     return output
 
