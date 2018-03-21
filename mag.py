@@ -61,6 +61,9 @@ def load_mag_l2(start, finish, kind='ss1s',
                         count = 0
                     if count == 3:
                         break
+                else:
+                    raise ValueError("Could not parse the header in file %s" %
+                            f)
 
             c = np.loadtxt(f, skiprows=skip, usecols=[6,7,8,9]).T
             s = f.split('_')[-3][:4] + '-001T00:00'
