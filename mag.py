@@ -9,6 +9,7 @@ import os
 
 def load_mag_l2(start, finish, kind='ss1s',
         http_manager=None, delete_others=True, cleanup=False, verbose=None):
+    """Load MAG data. """
     kind = kind.lower()
 
     if not delete_others:
