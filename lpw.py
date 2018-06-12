@@ -286,13 +286,15 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
 
             if output['time'] is None:
                 output['time'] = np.array(c['time_unix'])
-                output['current'] = [np.array(c['data']).T]
-                output['volt'] = [np.array(c['volt']).T]
+                output['current'] = np.array(c['data']).T
+                output['volt'] = np.array(c['volt']).T
             else:
                 output['time'] = np.hstack((output['time'],
                                 np.array(c['time_unix'])))
-                output['current'].append(np.array(c['data']).T)
-                output['volt'].append(np.array(c['volt']).T)
+                output['current'].hstack((
+                    output['current'], np.array(c['data']).T))
+                output['volt'].hstack((
+                    output['volt'], np.array(c['volt']).T))
 
             c.close()
 
@@ -316,72 +318,11 @@ Doesn't interpolate linearly, but just rebins data.  Appropriate for presentatio
     if cmap is None: cmap = 'Spectral_r'
     if norm is None: norm = LogNorm(1e-16, 1e-8)
 
-    t0 = s['time'][0]
-    t1 = s['time'][-1]
-    f0 = s['freq'][0]
-    f1 = s['freq'][-1]
-
-    n_times = np.floor((t1 - t0) / 4.)
-
-    if (n_times > 4096) and full_resolution:
-        print('You are attempting to create a very, very large image...')
-
-    if (n_times < max_times) or full_resolution:
-        dt = 4.
-    else:
-        dt = (t1 - t0) / max_times
-    tnew = np.arange(t0, t1, dt)
-
-    minf = np.min(np.diff(s['freq']))
-
-    if fmin is not None: f0 = fmin # Hz
-    if fmax is not None: f1 = fmax
-
-    extent = (t0, t1, f0, f1)
-
-    if full_resolution:
-        fnew = 10.**np.arange(np.log10(f0), np.log10(f1), 0.01) # Approximate
-        max_frequencies = fnew.shape[0]
-    else:
-        fnew = 10.**np.linspace(np.log10(f0), np.log10(f1-1.), max_frequencies)
-
-    # Compute expansion of frequency axis
-    freq_inx = []
-    fnext = s['freq'][1]
-    f_inx = 0
-    i = 0
-    while True:
-        if fnext > fnew[i]:
-            freq_inx.append(f_inx)
-            i+=1
-            if i == max_frequencies: break
-        else:
-            f_inx += 1
-            fnext = s['freq'][f_inx]
-    freq_inx = np.array(freq_inx)
-
-    # Compute expansion of time axis
-    t_inx = []
-    tnext = s['time'][1]
-    time_inx = 0
-    i = 0
-    while True:
-        if tnext > tnew[i]:
-            t_inx.append(time_inx)
-            i+=1
-            if i == tnew.shape[0]: break
-        else:
-            time_inx += 1
-            tnext = s['time'][time_inx]
-    t_inx = np.array(t_inx)
-
-    img = s['spec'][...,t_inx][freq_inx]
-    img_obj = plt.imshow(img, cmap=cmap, norm=norm, extent=extent,
-            origin='lower', interpolation='nearest')
+    img_obj = plt.pcolormesh(s['time'], s['freq'], s['spec'],
+            cmap=cmap, norm=norm)
 
     plt.yscale('log')
-    plt.ylim(f0, f1)
-    plt.xlim(t0, t1)
+    # plt.xlim(t0, t1)
 
     if labels:
         plt.ylabel('f / Hz')
@@ -391,12 +332,12 @@ Doesn't interpolate linearly, but just rebins data.  Appropriate for presentatio
     else:
         cbar = None
 
-    return img, img_obj, cbar
+    return img_obj, cbar
 
 def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
     start=None, finish=None,
     voltage=None, max_times=8912, imin=None, imax=None,
-    labels=True, colorbar=True, full_resolution=False, log_abs=True):
+    labels=True, colorbar=True, full_resolution=False, log_abs=False):
     """Plot LP IV sweeps as a time series. Interpolation to regular voltage and time axis as appropriate for presentation purposes, but don't do science with the results."""
 
     if ax is None:
@@ -409,84 +350,16 @@ def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
         cmap = plt.get_cmap()
         cmap.set_bad('grey')
 
-    t0 = s['time'][0]
-    t1 = s['time'][-1]
-
-    if voltage is None:
-        voltage = np.linspace(-20., 20., 512)
-
-    if full_resolution:
-        voltage = np.arange(-20., 20., 0.01)
-
-    n_times = np.floor((t1 - t0) / 4.)
-
-    if (n_times > 4096) and full_resolution:
-        print('You are attempting to create a very, very large image...')
-
-    if (n_times < max_times) or full_resolution:
-        dt = 4.
-    else:
-        dt = (t1 - t0) / max_times
-
-    tnew = np.arange(t0, t1, dt)
-
     if not norm:
         norm = LogNorm(1e-9, 1e-3)
         if not log_abs:
             norm = plt.Normalize(1e-3, 1e-3)
 
-
-
-    extent = (t0, t1, voltage[0], voltage[-1])
-    # Compute expansion of frequency axis
-    # freq_inx = []
-    # fnext = s['freq'][1]
-    # f_inx = 0
-    # i = 0
-    # while True:
-    #     if fnext > fnew[i]:
-    #         freq_inx.append(f_inx)
-    #         i+=1
-    #         if i == max_frequencies: break
-    #     else:
-    #         f_inx += 1
-    #         fnext = s['freq'][f_inx]
-    # freq_inx = np.array(freq_inx)
-
-    # Interpolate voltages
-    tmp = []
-    t = t0
-    img = np.empty((voltage.shape[0], tnew.shape[0])) + np.nan
-    inx_new = 0
-    inx_old = boom
-    for current, old_voltage in zip(s['current'], s['volt']):
-        i = boom
-        while i < current.shape[1]:
-            while tnew[inx_new] < s['time'][inx_old]:
-                img[:, inx_new] = np.interp(voltage, old_voltage[:,i],
-                        current[:, i],
-                        left=np.nan, right=np.nan)
-                inx_new += 1
-                if inx_new >= tnew.shape[0]:
-                    break
-            i += 2
-            inx_old += 2
-            if inx_new >= tnew.shape[0]:
-                break
-
-
-    # raise RuntimeError()
-    # print(img.shape)
-    print(extent)
+    d = s['current']
     if log_abs:
-        img = np.abs(img)
+        d = np.abs(d)
 
-    img_obj = plt.imshow(img, cmap=cmap, norm=norm, extent=extent,
-            origin='lower', interpolation='nearest')
-
-    # plt.yscale('log')
-    plt.ylim(voltage[0], voltage[-1])
-    plt.xlim(t0, t1)
+    img_obj = plt.pcolormesh(s['time'], s['volt'], d, cmap=cmap, norm=norm)
 
     if labels:
         plt.ylabel(r'U$_{Bias}$ / V')
@@ -496,7 +369,7 @@ def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
     else:
         cbar = None
 
-    return img, img_obj, cbar
+    return img_obj, cbar
 
 def cleanup(start=None, finish=None):
     if not start: start = celsius.spiceet("2014-09-22T00:00")
