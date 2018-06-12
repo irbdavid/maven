@@ -136,10 +136,11 @@ def plot_swia_l2_summary(swia_data, max_times=4096, cmap=None, norm=None,
     else:
         plt.sca(ax)
 
-    img = plt.imshow(
-        d, extent=extent, interpolation='nearest', origin='lower',
-        norm=norm, cmap=cmap
-    )
+    # img = plt.imshow(
+    #     d, extent=extent, interpolation='nearest', origin='lower',
+    #     norm=norm, cmap=cmap, aspect='auto'
+    # )
+    img = plt.pcolormesh(t, swia_data['energy'], d, norm=norm, cmap=cmap)
     plt.yscale('log')
     # plt.xlim(t0, t1)
     plt.ylim(swia_data['energy'][0], swia_data['energy'][-1])
