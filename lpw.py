@@ -15,7 +15,9 @@ from scipy.io.idl import readsav
 
 def get_densities(start, finish=None, verbose=False, sweeps=True,
                 cleanup=False):
-    """Routine to extract Dave's own processed densities"""
+    """Routine to extract Dave's own processed densities.  Ignore / don't use."""
+    raise RunTimeError("Not for use.")
+    
     if finish is None: finish = start + 86400. - 1.
 
     if start > finish: raise ValueError("Start %f exceeds %f" % (start, finish))
@@ -192,6 +194,10 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             year += 1
         t = celsius.spiceet('%d-%02d-01T00:00' % (year, month))
 
+    # Check for duplicates:
+    if len(files) != len(set(files)):
+        raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))        
+        
     if cleanup:
         print('LPW L2 cleanup complete')
         return
@@ -418,8 +424,9 @@ if __name__ == '__main__':
 
     if True:
         plt.close('all')
-        start = celsius.spiceet("2015-04-23T00:00")
-        finish = start + 86400. - 1.
+        start = celsius.spiceet("2015-04-23T06:00")
+        finish = start + 86400. /2.
+        
         # finish = start + 86400. * 2. - 1.
 
         xl = np.array((start, finish))

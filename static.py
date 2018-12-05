@@ -48,7 +48,11 @@ def load_static_l2(start, finish, kind='c0',
             month = 0o1
             year += 1
         t = celsius.spiceet('%d-%02d-01T00:00' % (year, month))
-
+    
+    # Check for duplicates:
+    if len(files) != len(set(files)):
+        raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))
+        
     if cleanup:
         print('static L2 Cleanup complete')
         return
@@ -93,27 +97,30 @@ def load_static_l2(start, finish, kind='c0',
             last_ind = None
             last_block_start = None
             N = data.shape[0]
-
-            for i in range(data.shape[0]):
-
-                if last_ind is None:
-                    last_ind = c['swp_ind'][i]
-                    last_block_start = i
-
-                if (c['swp_ind'][i] != last_ind) or (i == N):
-
-                    img = data[last_block_start:i-1, :, :].sum(axis=1)
-                    extent = (
-                            c['time_unix'][last_block_start] + t0,
-                            c['time_unix'][i-1] + t0,
-                            c['energy'][0, -1, last_ind],
-                            c['energy'][0, 0, last_ind],
-                        )
-                    # print(last_ind, extent)
-                    output['blocks'].append((extent, (img.T[::-1,:])))
-                    # plt.imshow(np.log10(img.T[::-1,:]), extent=extent,
-                    #             origin='lower', interpolation='nearest')
-                    last_ind = None
+            # print(c['eflux'].shape, c['energy'].shape, c['time_unix'].shape)
+            output['blocks'].append([c['time_unix'], c['energy'], c['eflux']])
+            # for i in range(data.shape[0]):
+            #
+            #     if last_ind is None:
+            #         last_ind = c['swp_ind'][i]
+            #         last_block_start = i
+            #
+            #     if (c['swp_ind'][i] != last_ind) or (i == N):
+            #
+            #         img = data[last_block_start:i-1, :, :].sum(axis=1)
+            #         extent = (
+            #                 c['time_unix'][last_block_start] + t0,
+            #                 c['time_unix'][i-1] + t0,
+            #                 c['energy'][0, -1, last_ind],
+            #                 c['energy'][0, 0, last_ind],
+            #             )
+            #         # print(img.shape, c['energy'].shape, c['time_unix'].shape)
+            #         # print(last_ind, extent)
+            #         # output['blocks'].append((extent, (img.T[::-1,:])))
+            #         output['blocks'].append( (img.T[::-1,:]) )
+            #         # plt.imshow(np.log10(img.T[::-1,:]), extent=extent,
+            #         #             origin='lower', interpolation='nearest')
+            #         last_ind = None
 
             c.close()
 
@@ -147,13 +154,13 @@ def plot_static_l2_summary(static_data, plot_type='Energy',
 
     x0, x1 = plt.xlim()
 
-    for extent, data in static_data['blocks']:
-        if extent[1] < x0: continue
+    for time, energy, data in static_data['blocks']:
+        if extent[-1] < x0: continue
         if extent[0] > x1: continue
 
-        img = plt.imshow(
+        img = plt.pcolormesh(
             data, extent=extent, interpolation='nearest', origin='lower',
-            norm=norm, cmap=cmap
+            norm=norm, cmap=cmap, aspect='auto'
         )
         imgs.append(img)
     plt.yscale('log')
@@ -184,14 +191,15 @@ if __name__ == '__main__':
     # d = load_static_l2_summary(t0, t1, kind='onboardsvyspec')
     # plot_static_l2_summary(d)
 
-    d = load_static_l2_summary(t0, t1, kind='c6')
-    plt.subplot(211)
-    plt.plot(d['time'], d['density'])
-    plt.subplot(212)
-    plt.plot(d['time'], d['velocity'][0], 'r.')
-    plt.plot(d['time'], d['velocity'][1], 'g.')
-    plt.plot(d['time'], d['velocity'][2], 'b.')
-
+    d = load_static_l2_summary(t0, t1, kind='c0')
+    plot_static_l2_summary(d)
+    # plt.subplot(211)
+    # plt.plot(d['time'], d['density'])
+    # plt.subplot(212)
+    # plt.plot(d['time'], d['velocity'][0], 'r.')
+    # plt.plot(d['time'], d['velocity'][1], 'g.')
+    # plt.plot(d['time'], d['velocity'][2], 'b.')
+    #
     celsius.setup_time_axis()
 
     plt.show()

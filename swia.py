@@ -45,6 +45,10 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
             year += 1
         t = celsius.spiceet('%d-%02d-01T00:00' % (year, month))
 
+    # Check for duplicates:
+    if len(files) != len(set(files)):
+        raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))
+        
     if cleanup:
         print('SWIA L2 Cleanup complete')
         return
