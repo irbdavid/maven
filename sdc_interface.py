@@ -212,7 +212,12 @@ Returns: List of local files, freshly downloaded if necessary, that satisfy the
                         print('Index %s does not exist' % remote_path)
 
                     if ok_files:
-                        raise RuntimeError("No remote index available, but local matches were found anyway. This should never happen.")
+                        raise RuntimeError("""No remote index available, but local matches were found anyway. This should never happen.
+
+                        Details:
+                            remote_path: %s
+                            index_path: %s
+                        """.format(remote_path, index_path))
 
                     return []
 
@@ -267,6 +272,7 @@ Returns: List of local files, freshly downloaded if necessary, that satisfy the
                 if ok_files:
                     print('%d remote matches with highest version %f' % \
                         (len(ok_files), max([v[0] for v in list(ok_files.values())])))
+
                 else:
                     print('No remote matches')
 
@@ -279,7 +285,6 @@ Returns: List of local files, freshly downloaded if necessary, that satisfy the
         if not silent:
             print('Query %s: Returning %d (DL: %d, DEL: %d)' %
                 (query, len(ok_files), n_downloaded, n_deleted))
-
         return [f[1] for f in list(ok_files.values())]
 
 
