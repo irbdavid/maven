@@ -48,7 +48,7 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
     # Check for duplicates:
     if len(files) != len(set(files)):
         raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))
-        
+
     if cleanup:
         print('SWIA L2 Cleanup complete')
         return
@@ -94,16 +94,16 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
                 output['time'] = np.array(c['time_unix'])
                 output['quality_flag'] = np.array(c['quality_flag'])
                 output['density'] = np.array(c['density'])
-                output['velocity'] = np.array(c['velocity']).T
-                output['temperature'] = np.array(c['temperature']).T
+                output['velocity'] = np.array(c['velocity_mso']).T
+                output['temperature'] = np.array(c['temperature_mso']).T
             else:
                 sdc_interface.merge_attrs(output, 'time', c, 'time_unix')
                 sdc_interface.merge_attrs(output, 'quality_flag', c)
                 sdc_interface.merge_attrs(output, 'density', c)
 
-                sdc_interface.merge_attrs(output, 'velocity', c,
+                sdc_interface.merge_attrs(output, 'velocity_mso', c,
                                 transpose=True)
-                sdc_interface.merge_attrs(output, 'temperature', c,
+                sdc_interface.merge_attrs(output, 'temperature_mso', c,
                                 transpose=True)
 
             c.close()
