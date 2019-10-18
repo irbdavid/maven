@@ -6,7 +6,7 @@ from . import sdc_interface
 from functools import wraps
 from matplotlib.colors import LogNorm
 
-from spacepy import pycdf
+import cdflib
 
 import os
 
@@ -61,24 +61,24 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
     if kind == 'onboardsvyspec':
         output = {'time':None, 'def':None}
         for f in sorted(files):
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = np.array(c['time_unix'])
-                output['def']  = np.array(c['spectra_diff_en_fluxes']).T
+                output['time'] = c.varget('time_unix')
+                output['def']  = c.varget('spectra_diff_en_fluxes').T
 
                 # Some weird formatting here:
                 output['energy']  = np.array(
-                    [c['energy_spectra'][i] for i in range(c['energy_spectra'].shape[0])]
+                    [c.varget('energy_spectra')[i] for i in range(c.varget('energy_spectra').shape[0])]
                 )
                 output['energy'] = output['energy'][::-1]
             else:
                 output['time'] = np.hstack((output['time'],
-                                    np.array(c['time_unix'])))
+                                    c.varget('time_unix')))
                 output['def'] = np.hstack((output['def'],
-                                    np.array(c['spectra_diff_en_fluxes']).T))
+                                    c.varget('spectra_diff_en_fluxes').T))
 
-                if output['energy'].shape != c['energy_spectra'].shape:
+                if output['energy'].shape != c.varget('energy_spectra').shape:
                     raise ValueError("Energy range has changed!")
 
             c.close()
@@ -88,22 +88,22 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
         output = {'time':None, 'velocity':None, 'density':None,
                                 'temperature':None, 'quality_flag':None}
         for f in sorted(files):
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = np.array(c['time_unix'])
-                output['quality_flag'] = np.array(c['quality_flag'])
-                output['density'] = np.array(c['density'])
-                output['velocity'] = np.array(c['velocity_mso']).T
-                output['temperature'] = np.array(c['temperature_mso']).T
+                output['time'] = c.varget('time_unix')
+                output['quality_flag'] = c.varget('quality_flag')
+                output['density'] = c.varget('density')
+                output['velocity'] = c.varget('velocity_mso').T
+                output['temperature'] = c.varget('temperature_mso').T
             else:
                 sdc_interface.merge_attrs(output, 'time', c, 'time_unix')
                 sdc_interface.merge_attrs(output, 'quality_flag', c)
                 sdc_interface.merge_attrs(output, 'density', c)
 
-                sdc_interface.merge_attrs(output, 'velocity_mso', c,
+                sdc_interface.merge_attrs(output, 'velocity', c,
                                 transpose=True)
-                sdc_interface.merge_attrs(output, 'temperature_mso', c,
+                sdc_interface.merge_attrs(output, 'temperature', c,
                                 transpose=True)
 
             c.close()

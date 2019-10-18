@@ -6,7 +6,7 @@ from . import sdc_interface
 from functools import wraps
 from matplotlib.colors import LogNorm
 
-from spacepy import pycdf
+import cdflib
 
 import os
 
@@ -48,11 +48,11 @@ def load_static_l2(start, finish, kind='c0',
             month = 0o1
             year += 1
         t = celsius.spiceet('%d-%02d-01T00:00' % (year, month))
-    
+
     # Check for duplicates:
     if len(files) != len(set(files)):
         raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))
-        
+
     if cleanup:
         print('static L2 Cleanup complete')
         return
@@ -67,17 +67,17 @@ def load_static_l2(start, finish, kind='c0',
     #         c = pycdf.CDF(f)
     #
     #         if output['time'] is None:
-    #             output['time'] = np.array(c['time_unix'])
-    #             output['eflux']  = np.array(c['eflux']).T
+    #             output['time'] = c.varget('time_unix'])
+    #             output['eflux']  = c.varget('eflux']).T
     #
-    #             output['energy']  = np.array(c['energy'][0,:,0])
-    #             output['mass']  = np.array(c['mass_arr'][:,0,0])
+    #             output['energy']  = c.varget('energy'][0,:,0])
+    #             output['mass']  = c.varget('mass_arr'][:,0,0])
     #
     #         else:
     #             output['time'] = np.hstack((output['time'],
-    #                                 np.array(c['time_unix'])))
+    #                                 c.varget('time_unix'])))
     #             output['eflux']  = np.hstack((output['time'],
-    #                                 np.array(c['eflux'].T)))
+    #                                 c.varget('eflux'].T)))
     #
     #             # if output['energy'].shape != c['energy'].shape[1]:
     #             #     raise ValueError("Energy range has changed!")
@@ -91,14 +91,17 @@ def load_static_l2(start, finish, kind='c0',
         t0 = celsius.spiceet("1970-01-01T00:00")
         output = {'blocks':[], 'static_kind':'c0'}
         for f in sorted(files):
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
-            data = np.array(c['eflux'])
+            data = c.varget('eflux')
             last_ind = None
             last_block_start = None
             N = data.shape[0]
             # print(c['eflux'].shape, c['energy'].shape, c['time_unix'].shape)
-            output['blocks'].append([c['time_unix'], c['energy'], c['eflux']])
+            output['blocks'].append([
+                        c.varget('time_unix'),
+                        c.varget('energy'),
+                        c.varget('eflux')])s
             # for i in range(data.shape[0]):
             #
             #     if last_ind is None:

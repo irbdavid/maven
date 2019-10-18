@@ -13,15 +13,24 @@ import time as py_time
 from html.parser import HTMLParser
 import re
 
-from spacepy import pycdf
+import cdflib
 
 def yyyymmdd_to_spiceet(x):
     return celsius.spiceet(x[:4] + '-' + x[4:6] + '-' + x[6:8] + 'T00:00')
 
 def merge_attrs(dict_out, name, dict_in, input_name=None, transpose=False):
+    use_cdflib = False
+    if isinstance(dict_in, cdflib.CDF):
+        use_cdflib = True
+
     if input_name is None:
         input_name = name
-    v = np.array(dict_in[input_name])
+
+    if not use_cdflib:
+        v = np.array(dict_in[input_name])
+    else:
+        v = dict_in.varget(input_name)
+
     if transpose:
         v = v.T
 

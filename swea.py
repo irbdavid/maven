@@ -6,7 +6,7 @@ from . import sdc_interface
 from functools import wraps
 from matplotlib.colors import LogNorm
 
-from spacepy import pycdf
+import cdflib
 
 import os
 
@@ -43,11 +43,11 @@ def load_swea_l2_summary(start, finish, kind='svyspec', http_manager=None,
             month = 0o1
             year += 1
         t = celsius.spiceet('%d-%02d-01T00:00' % (year, month))
-    
+
     # Check for duplicates:
     if len(files) != len(set(files)):
         raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))
-        
+
     if cleanup:
         print('SWEA L2 cleanup complete')
         return
@@ -62,24 +62,24 @@ def load_swea_l2_summary(start, finish, kind='svyspec', http_manager=None,
     if kind == 'svyspec':
         output = {'time':None, 'def':None}
         for f in sorted(files):
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = np.array(c['time_unix'])
-                output['def']  = np.array(c['diff_en_fluxes']).T
+                output['time'] = c.varget('time_unix')
+                output['def']  = c.varget('diff_en_fluxes').T
 
                 # Some weird formatting here:
                 output['energy']  = np.array(
-                    [c['energy'][i] for i in range(c['energy'].shape[0])]
+                    [c['energy'][i] for i in range(c.varget('energy').shape[0])]
                 )
                 output['energy'] = output['energy'][::-1]
             else:
                 output['time'] = np.hstack((output['time'],
-                                    np.array(c['time_unix'])))
+                                    c.varget('time_unix')))
                 output['def'] = np.hstack((output['def'],
-                                    np.array(c['diff_en_fluxes']).T))
+                                    c.varget('diff_en_fluxes').T))
 
-                if output['energy'].shape != c['energy'].shape:
+                if output['energy'].shape != c.varget('energy').shape:
                     raise ValueError("Energy range has changed!")
 
             c.close()

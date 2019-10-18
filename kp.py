@@ -12,7 +12,7 @@ from matplotlib.colors import LogNorm
 # from .kp_shortname_lookup import kp_shortname_lookup
 from . import sdc_interface
 
-from spacepy import pycdf
+# from spacepy import pycdf
 
 # Approximate names used in IDL using this lookup table
 NAME_TRANSFER = [

@@ -4,20 +4,23 @@ import spiceypy
 import celsius
 
 from maven import sdc_interface
+import cdflib
+# CDFConverter = sdc_interface.CDFConverter
 
 from functools import wraps
 from matplotlib.colors import LogNorm
 
-from spacepy import pycdf
+# from spacepy import pycdf
 
 import os
 from scipy.io.idl import readsav
+
 
 def get_densities(start, finish=None, verbose=False, sweeps=True,
                 cleanup=False):
     """Routine to extract Dave's own processed densities.  Ignore / don't use."""
     raise RunTimeError("Not for use.")
-    
+
     if finish is None: finish = start + 86400. - 1.
 
     if start > finish: raise ValueError("Start %f exceeds %f" % (start, finish))
@@ -196,8 +199,8 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
 
     # Check for duplicates:
     if len(files) != len(set(files)):
-        raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))        
-        
+        raise ValueError("Duplicates appeared in files to load: " + ", ".join(files))
+
     if cleanup:
         print('LPW L2 cleanup complete')
         return
@@ -213,38 +216,38 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
     if kind == 'lpnt':
         output = dict(time=None, ne=None, te=None, usc=None)
         for f in sorted(files):
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
             if output['time'] is None:
                 # inx =
-                output['time'] = np.array(c['time_unix'])
-                output['ne'] = np.array(c['data'][:,0])
-                output['te'] = np.array(c['data'][:,1])
-                output['usc'] = np.array(c['data'][:,2])
+                output['time'] = c.varget('time_unix')
+                output['ne'] = c.varget('data')[:,0]
+                output['te'] = c.varget('data')[:,1]
+                output['usc'] = c.varget('data')[:,2]
             else:
                 output['time'] = np.hstack((output['time'],
-                    np.array(c['time_unix'])))
+                    c.varget('time_unix')))
 
                 for v, i in zip(('ne', 'te', 'usc'), (0,1,2)):
-                    output[v] = np.hstack((output[v], np.array(c['data'][:,i])))
+                    output[v] = np.hstack((output[v], c.varget('data')[:,i]))
             c.close()
 
     elif kind == 'wn':
         output = dict(time=None, ne=None)
         for f in sorted(files):
             print(f)
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
             if output['time'] is None:
                 # inx =
-                output['time'] = np.array(c['time_unix'])
-                output['ne'] = np.array(c['data'])
+                output['time'] = c.varget('time_unix')
+                output['ne'] = c.varget('data')
             else:
                 output['time'] = np.hstack((output['time'],
-                    np.array(c['time_unix'])))
+                    c.varget('time_unix')))
                 output['ne'] = np.hstack((output['ne'],
-                    np.array(c['data'])))
+                    c.varget('data')))
 
                 # for v, i in zip(('ne', 'te', 'usc'), (0,1,2)):
-                #     output[v] = np.hstack((output[v], np.array(c['data'][:,i])))
+                #     output[v] = np.hstack((output[v], c.varget('data'][:,i])))
             c.close()
 
 
@@ -252,17 +255,17 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
         output = dict(time=None, spec=None, freq=None)
         for f in sorted(files):
             print(f)
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = np.array(c['time_unix'])
-                output['spec'] = np.array(c['data']).T
-                output['freq'] = np.array(c['freq'][0,:])
+                output['time'] = c.varget('time_unix')
+                output['spec'] = c.varget('data').T
+                output['freq'] = c.varget('freq')[0,:]
             else:
                 output['time'] = np.hstack((output['time'],
-                                np.array(c['time_unix'])))
+                                c.varget('time_unix')))
                 output['spec'] = np.hstack((output['spec'],
-                                np.array(c['data']).T))
+                                c.varget('data').T))
             c.close()
 
         # print 'Warning: spectra output is not interpolated!'
@@ -271,36 +274,36 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
         output = dict(time=None, spec=None, freq=None)
         for f in sorted(files):
             print(f)
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = np.array(c['time_unix'])
-                output['spec'] = np.array(c['data']).T
-                output['freq'] = np.array(c['freq'][0,:])
+                output['time'] = c.varget('time_unix')
+                output['spec'] = c.varget('data').T
+                output['freq'] = c.varget('freq')[0,:]
             else:
                 output['time'] = np.hstack((output['time'],
-                                np.array(c['time_unix'])))
+                                c.varget('time_unix')))
                 output['spec'] = np.hstack((output['spec'],
-                                np.array(c['data']).T))
+                                c.varget('data').T))
         # print 'Warning: spectra output is not interpolated!'
             c.close()
 
     elif kind == 'lpiv':
         output = dict(time=None, current=None, volt=None)
         for f in sorted(files):
-            c = pycdf.CDF(f)
+            c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = np.array(c['time_unix'])
-                output['current'] = np.array(c['data']).T
-                output['volt'] = np.array(c['volt']).T
+                output['time'] = c.varget('time_unix')
+                output['current'] = c.varget('data').T
+                output['volt'] = c.varget('volt').T
             else:
                 output['time'] = np.hstack((output['time'],
-                                np.array(c['time_unix'])))
+                                c.varget('time_unix')))
                 output['current'].hstack((
-                    output['current'], np.array(c['data']).T))
+                    output['current'], c.varget('data').T))
                 output['volt'].hstack((
-                    output['volt'], np.array(c['volt']).T))
+                    output['volt'], c.varget('volt').T))
 
             c.close()
 
@@ -342,9 +345,9 @@ Doesn't interpolate linearly, but just rebins data.  Appropriate for presentatio
 
 def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
     start=None, finish=None,
-    voltage=None, max_times=8912, imin=None, imax=None,
-    labels=True, colorbar=True, full_resolution=False, log_abs=False):
-    """Plot LP IV sweeps as a time series. Interpolation to regular voltage and time axis as appropriate for presentation purposes, but don't do science with the results."""
+    voltage=None,
+    labels=True, colorbar=True, log_abs=True):
+    """Plot LP IV sweeps as a time series."""
 
     if ax is None:
         ax = plt.gca()
@@ -352,14 +355,16 @@ def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
         plt.sca(ax)
 
     if cmap is None:
-        plt.set_cmap('Spectral_r')
+        plt.set_cmap('viridis')
+        if log_abs is False:
+            plt.set_cmap('RdBu_r')
         cmap = plt.get_cmap()
         cmap.set_bad('grey')
 
     if not norm:
-        norm = LogNorm(1e-9, 1e-3)
-        if not log_abs:
-            norm = plt.Normalize(1e-3, 1e-3)
+        norm = plt.Normalize(1e-7, 1e-7)
+        if log_abs:
+            norm = LogNorm(1e-9, 1e-5)
 
     d = s['current']
     if log_abs:
@@ -369,8 +374,9 @@ def lpw_plot_iv(s, boom=1, ax=None, cmap=None, norm=None,
 
     if labels:
         plt.ylabel(r'U$_{Bias}$ / V')
+
     if colorbar:
-        cbar = plt.colorbar(cax=celsius.make_colorbar_cax())
+        cbar = plt.colorbar(cax=celsius.make_colorbar_cax(ax))
         cbar.set_label(r'i / A')
     else:
         cbar = None
@@ -426,7 +432,7 @@ if __name__ == '__main__':
         plt.close('all')
         start = celsius.spiceet("2015-04-23T06:00")
         finish = start + 86400. /2.
-        
+
         # finish = start + 86400. * 2. - 1.
 
         xl = np.array((start, finish))
