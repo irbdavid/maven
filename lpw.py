@@ -219,16 +219,16 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             c = cdflib.CDF(f)
             if output['time'] is None:
                 # inx =
-                output['time'] = c.varget('time_unix')
-                output['ne'] = c.varget('data')[:,0]
-                output['te'] = c.varget('data')[:,1]
-                output['usc'] = c.varget('data')[:,2]
+                output['time'] = c['time_unix']
+                output['ne'] = c['data'][:,0]
+                output['te'] = c['data'][:,1]
+                output['usc'] = c['data'][:,2]
             else:
                 output['time'] = np.hstack((output['time'],
-                    c.varget('time_unix')))
+                    c['time_unix']))
 
                 for v, i in zip(('ne', 'te', 'usc'), (0,1,2)):
-                    output[v] = np.hstack((output[v], c.varget('data')[:,i]))
+                    output[v] = np.hstack((output[v], c['data'][:,i]))
             c.close()
 
     elif kind == 'wn':
@@ -238,13 +238,13 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             c = cdflib.CDF(f)
             if output['time'] is None:
                 # inx =
-                output['time'] = c.varget('time_unix')
-                output['ne'] = c.varget('data')
+                output['time'] = c['time_unix']
+                output['ne'] = c['data']
             else:
                 output['time'] = np.hstack((output['time'],
-                    c.varget('time_unix')))
+                    c['time_unix']))
                 output['ne'] = np.hstack((output['ne'],
-                    c.varget('data')))
+                    c['data']))
 
                 # for v, i in zip(('ne', 'te', 'usc'), (0,1,2)):
                 #     output[v] = np.hstack((output[v], c.varget('data'][:,i])))
@@ -258,14 +258,14 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = c.varget('time_unix')
-                output['spec'] = c.varget('data').T
-                output['freq'] = c.varget('freq')[0,:]
+                output['time'] = c['time_unix']
+                output['spec'] = c['data'].T
+                output['freq'] = c['freq'][0,:]
             else:
                 output['time'] = np.hstack((output['time'],
-                                c.varget('time_unix')))
+                                c['time_unix']))
                 output['spec'] = np.hstack((output['spec'],
-                                c.varget('data').T))
+                                c['data'].T))
             c.close()
 
         # print 'Warning: spectra output is not interpolated!'
@@ -277,14 +277,14 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = c.varget('time_unix')
-                output['spec'] = c.varget('data').T
-                output['freq'] = c.varget('freq')[0,:]
+                output['time'] = c['time_unix']
+                output['spec'] = c['data'].T
+                output['freq'] = c['freq'][0,:]
             else:
                 output['time'] = np.hstack((output['time'],
-                                c.varget('time_unix')))
+                                c['time_unix']))
                 output['spec'] = np.hstack((output['spec'],
-                                c.varget('data').T))
+                                c['data'].T))
         # print 'Warning: spectra output is not interpolated!'
             c.close()
 
@@ -294,16 +294,16 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = c.varget('time_unix')
-                output['current'] = c.varget('data').T
-                output['volt'] = c.varget('volt').T
+                output['time'] = c['time_unix']
+                output['current'] = c['data'].T
+                output['volt'] = c['volt'].T
             else:
                 output['time'] = np.hstack((output['time'],
-                                c.varget('time_unix')))
+                                c['time_unix']))
                 output['current'].hstack((
-                    output['current'], c.varget('data').T))
+                    output['current'], c['data'].T))
                 output['volt'].hstack((
-                    output['volt'], c.varget('volt').T))
+                    output['volt'], c['volt'].T))
 
             c.close()
 

@@ -64,21 +64,21 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
             c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = c.varget('time_unix')
-                output['def']  = c.varget('spectra_diff_en_fluxes').T
+                output['time'] = c['time_unix']
+                output['def']  = c['spectra_diff_en_fluxes'].T
 
                 # Some weird formatting here:
                 output['energy']  = np.array(
-                    [c.varget('energy_spectra')[i] for i in range(c.varget('energy_spectra').shape[0])]
+                    [c['energy_spectra'][i] for i in range(c['energy_spectra'].shape[0])]
                 )
                 output['energy'] = output['energy'][::-1]
             else:
                 output['time'] = np.hstack((output['time'],
-                                    c.varget('time_unix')))
+                                    c['time_unix']))
                 output['def'] = np.hstack((output['def'],
-                                    c.varget('spectra_diff_en_fluxes').T))
+                                    c['spectra_diff_en_fluxes'].T))
 
-                if output['energy'].shape != c.varget('energy_spectra').shape:
+                if output['energy'].shape != c['energy_spectra'].shape:
                     raise ValueError("Energy range has changed!")
 
             c.close()
@@ -91,11 +91,11 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
             c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = c.varget('time_unix')
-                output['quality_flag'] = c.varget('quality_flag')
-                output['density'] = c.varget('density')
-                output['velocity'] = c.varget('velocity_mso').T
-                output['temperature'] = c.varget('temperature_mso').T
+                output['time'] = c['time_unix']
+                output['quality_flag'] = c['quality_flag']
+                output['density'] = c['density']
+                output['velocity'] = c['velocity_mso'].T
+                output['temperature'] = c['temperature_mso'].T
             else:
                 sdc_interface.merge_attrs(output, 'time', c, 'time_unix')
                 sdc_interface.merge_attrs(output, 'quality_flag', c)

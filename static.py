@@ -93,15 +93,14 @@ def load_static_l2(start, finish, kind='c0',
         for f in sorted(files):
             c = cdflib.CDF(f)
 
-            data = c.varget('eflux')
+            data = c['eflux']
             last_ind = None
             last_block_start = None
             N = data.shape[0]
             # print(c['eflux'].shape, c['energy'].shape, c['time_unix'].shape)
             output['blocks'].append([
-                        c.varget('time_unix'),
-                        c.varget('energy'),
-                        c.varget('eflux')])s
+                        c['time_unix'],
+                        c['energy'], c['eflux']])
             # for i in range(data.shape[0]):
             #
             #     if last_ind is None:

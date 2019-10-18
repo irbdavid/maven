@@ -29,7 +29,7 @@ def merge_attrs(dict_out, name, dict_in, input_name=None, transpose=False):
     if not use_cdflib:
         v = np.array(dict_in[input_name])
     else:
-        v = dict_in.varget(input_name)
+        v = dict_in[input_name]
 
     if transpose:
         v = v.T

@@ -65,21 +65,21 @@ def load_swea_l2_summary(start, finish, kind='svyspec', http_manager=None,
             c = cdflib.CDF(f)
 
             if output['time'] is None:
-                output['time'] = c.varget('time_unix')
-                output['def']  = c.varget('diff_en_fluxes').T
+                output['time'] = c['time_unix']
+                output['def']  = c['diff_en_fluxes'].T
 
                 # Some weird formatting here:
                 output['energy']  = np.array(
-                    [c['energy'][i] for i in range(c.varget('energy').shape[0])]
+                    [c['energy'][i] for i in range(c['energy'].shape[0])]
                 )
                 output['energy'] = output['energy'][::-1]
             else:
                 output['time'] = np.hstack((output['time'],
-                                    c.varget('time_unix')))
+                                    c['time_unix']))
                 output['def'] = np.hstack((output['def'],
-                                    c.varget('diff_en_fluxes').T))
+                                    c['diff_en_fluxes'].T))
 
-                if output['energy'].shape != c.varget('energy').shape:
+                if output['energy'].shape != c['energy'].shape:
                     raise ValueError("Energy range has changed!")
 
             c.close()
