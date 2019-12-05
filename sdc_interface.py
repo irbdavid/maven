@@ -209,7 +209,7 @@ Returns: List of local files, freshly downloaded if necessary, that satisfy the
 
             update_index = True
             if os.path.exists(index_path):
-                age = py_time.time() - os.path.getmtime(index_path)
+                age = (py_time.time() - os.stat(index_path).st_mtime)
                 if age < self.update_interval:
                     update_index = False
 

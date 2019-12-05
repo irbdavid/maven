@@ -300,9 +300,9 @@ def lpw_l2_load(start, finish, kind='lpnt', http_manager=None, cleanup=False,
             else:
                 output['time'] = np.hstack((output['time'],
                                 c['time_unix']))
-                output['current'].hstack((
+                output['current'] = np.hstack((
                     output['current'], c['data'].T))
-                output['volt'].hstack((
+                output['volt'] = np.hstack((
                     output['volt'], c['volt'].T))
 
             c.close()
