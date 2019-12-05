@@ -21,7 +21,7 @@ def load_ngims_l2(start, finish, kind='ion', species='all',
     if http_manager is None:
         http_manager = sdc_interface.maven_http_manager
 
-    if species is 'all':
+    if species == 'all':
         species = list(ION_MASSES.keys())
 
     t = start
