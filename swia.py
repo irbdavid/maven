@@ -97,14 +97,23 @@ def load_swia_l2_summary(start, finish, kind='onboardsvymom',
                 output['velocity'] = c['velocity_mso'].T
                 output['temperature'] = c['temperature_mso'].T
             else:
-                sdc_interface.merge_attrs(output, 'time', c, 'time_unix')
-                sdc_interface.merge_attrs(output, 'quality_flag', c)
-                sdc_interface.merge_attrs(output, 'density', c)
-
-                sdc_interface.merge_attrs(output, 'velocity', c,
-                                transpose=True)
-                sdc_interface.merge_attrs(output, 'temperature', c,
-                                transpose=True)
+                # sdc_interface.merge_attrs(output, 'time', c, 'time_unix')
+                # sdc_interface.merge_attrs(output, 'quality_flag', c)
+                # sdc_interface.merge_attrs(output, 'density', c)
+                #
+                # sdc_interface.merge_attrs(output, 'velocity', c,
+                #                 transpose=True)
+                # sdc_interface.merge_attrs(output, 'temperature', c,
+                #                 transpose=True)
+                output['time'] = np.hstack((output['time'], c['time_unix']))
+                output['quality_flag'] = np.hstack(
+                        (output['quality_flag'], c['quality_flag']))
+                output['density'] = np.hstack(
+                        (output['density'], c['density']))
+                output['velocity'] = np.hstack(
+                        (output['velocity'], c['velocity'].T))
+                output['temperature'] = np.hstack(
+                        (output['temperature'], c['temperature'].T))
 
             c.close()
 
