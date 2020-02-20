@@ -19,6 +19,8 @@ def yyyymmdd_to_spiceet(x):
     return celsius.spiceet(x[:4] + '-' + x[4:6] + '-' + x[6:8] + 'T00:00')
 
 def merge_attrs(dict_out, name, dict_in, input_name=None, transpose=False):
+    raise NotImplementedError()
+    
     use_cdflib = False
     if isinstance(dict_in, cdflib.CDF):
         use_cdflib = True
