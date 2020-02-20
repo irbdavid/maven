@@ -123,7 +123,7 @@ def plot_swea_l2_summary(swea_data, max_times=4096, cmap=None, norm=None,
 
     extent = (t[0], t[-1], energy_range[0], energy_range[1])
 
-    img = plt.pcolomesh(t, swea_data['energy'], d,
+    img = plt.pcolormesh(t, swea_data['energy'], d,
         norm=norm, cmap=cmap
     )
     # plt.xlim(t[0], t[-1])
